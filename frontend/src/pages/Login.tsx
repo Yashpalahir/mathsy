@@ -85,8 +85,8 @@ const Login = () => {
             toast.error(error);
           }
         } else {
-          toast.success("Account created! You can now log in.");
-          setAuthMode("login");
+          toast.success("Account created! Redirecting to home.");
+          navigate("/", { replace: true });
         }
       }
     } catch (err) {
