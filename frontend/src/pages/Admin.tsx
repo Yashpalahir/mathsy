@@ -52,7 +52,7 @@ const Admin = () => {
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || userType !== "admin")) {
-      navigate("/login");
+      navigate("/admin-login");
     } else if (userType === "admin") {
       fetchCourses();
     }
@@ -165,7 +165,7 @@ const Admin = () => {
   }
 
   if (!isAuthenticated || userType !== "admin") {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/admin-login" replace />;
   }
 
   return (

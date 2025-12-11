@@ -82,6 +82,13 @@ class ApiClient {
     });
   }
 
+  async adminLogin(password: string) {
+    return this.request<{ token: string; user: any }>('/admin/login', {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    });
+  }
+
   async getMe() {
     return this.request<any>('/auth/me', {
       method: 'GET',

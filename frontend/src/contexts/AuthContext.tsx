@@ -19,6 +19,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ error: string | null }>;
   signup: (email: string, password: string, fullName: string, userType: "student" | "parent") => Promise<{ error: string | null }>;
+  adminPasswordLogin: (password: string) => Promise<{ error: string | null }>;
   logout: () => Promise<void>;
 }
 
@@ -72,6 +73,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const adminPasswordLogin = async (password: string): Promise<{ error: string | null }> => {
+    try {
+      const response = await apiClient.adminLogin(password);
+      if (response.success && response.token && response.user) {
+        apiClient.setToken(response.token);
+        setUser(response.user);
+        setUserType(response.user.role);
+        return { error: null };
+      }
+      return { error: "Admin login failed" };
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : "Admin login failed" };
+    }
+  };
+
   const signup = async (
     email: string, 
     password: string, 
@@ -115,6 +131,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isLoading,
         login, 
         signup,
+        adminPasswordLogin,
         logout 
       }}
     >
