@@ -11,30 +11,6 @@ connectDB();
 
 const app = express();
 
-// Middleware
-// const allowedOrigins = [
-//     process.env.FRONTEND_URL,
-//     "http://localhost:8080",
-//     "http://127.0.0.1:8080",
-//   ].filter(Boolean);
-  
-//   app.use(cors({
-//     origin: (origin, callback) => {
-//       // Allow requests with no origin (mobile apps, curl)
-//       if (!origin) return callback(null, true);
-  
-//       if (allowedOrigins.includes(origin)) {
-//         return callback(null, true);
-//       } else {
-//         console.log("CORS BLOCKED:", origin);
-//         return callback(new Error("Not allowed by CORS"));
-//       }
-//     },
-//     credentials: true,
-//   }));
-  
-//   // For preflight (OPTIONS requests)
-//   app.options("*", cors());
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
