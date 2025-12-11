@@ -43,9 +43,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchUser = async () => {
     try {
       const response = await apiClient.getMe();
-      if (response.success && response.data) {
-        setUser(response.data.user);
-        setUserType(response.data.user.role);
+      if (response.success && response.user) {
+        setUser(response.user);
+        setUserType(response.user.role);
       }
     } catch (error) {
       // Token might be invalid, clear it
@@ -60,10 +60,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string): Promise<{ error: string | null }> => {
     try {
       const response = await apiClient.login(email, password);
-      if (response.success && response.data) {
-        apiClient.setToken(response.data.token);
-        setUser(response.data.user);
-        setUserType(response.data.user.role);
+      if (response.success && response.token && response.user) {
+        apiClient.setToken(response.token);
+        setUser(response.user);
+        setUserType(response.user.role);
         return { error: null };
       }
       return { error: "Login failed" };
@@ -88,10 +88,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         role,
       });
       
-      if (response.success && response.data) {
-        apiClient.setToken(response.data.token);
-        setUser(response.data.user);
-        setUserType(response.data.user.role);
+      if (response.success && response.token && response.user) {
+        apiClient.setToken(response.token);
+        setUser(response.user);
+        setUserType(response.user.role);
         return { error: null };
       }
       return { error: "Signup failed" };
