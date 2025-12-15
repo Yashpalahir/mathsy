@@ -2,7 +2,6 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import connectDB from './config/db.js';
-import paymentsRouter from './routes/payments.js';
 
 // Load env vars
 dotenv.config();
@@ -14,20 +13,19 @@ connectDB();
 
 // CORS configuration - allow requests from frontend
 // In development, allow all origins for easier testing
-const corsOptions = process.env.NODE_ENV === 'production' 
-  ? {
-      origin: process.env.FRONTEND_URL || 'http://localhost:8080',
-      credentials: true,
-    }
-  : {
-      origin: true, // Allow all origins in development
-      credentials: true,
-    };
+// const corsOptions = process.env.NODE_ENV === 'production' 
+//   ? {
+//       origin: process.env.FRONTEND_URL || 'http://localhost:8080',
+//       credentials: true,
+//     }
+//   : {
+//       origin: true, // Allow all origins in development
+//       credentials: true,
+//     };
 
-app.use(cors(corsOptions));
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/api/payments', paymentsRouter);
 
 // Routes
 import authRoutes from './routes/authRoutes.js';
@@ -38,7 +36,7 @@ import adminRoutes from './routes/adminRoutes.js';
 import demoBookingRoutes from './routes/demoBookingRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import testRoutes from './routes/testRoutes.js';
-
+import paymentRoutes from './routes/payments.js';
 // ...existing code...
 
 app.use('/api/auth', authRoutes);
@@ -49,7 +47,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/demo-bookings', demoBookingRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/tests', testRoutes);
-
+app.use('/api/payments', paymentRoutes);
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({
@@ -58,22 +56,6 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
-
-// Payment service status check
-app.get('/api/payments/status', (req, res) => {
-  const hasKeyId = !!(process.env.RAZORPAY_KEY_ID || process.env.key_id);
-  const hasKeySecret = !!(process.env.RAZORPAY_KEY_SECRET || process.env.key_secret);
-  
-  res.json({
-    configured: hasKeyId && hasKeySecret,
-    hasKeyId,
-    hasKeySecret,
-    message: hasKeyId && hasKeySecret 
-      ? 'Payment service is ready' 
-      : 'Payment service not configured. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env',
-  });
-});
-
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({

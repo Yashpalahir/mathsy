@@ -1,6 +1,8 @@
 import express from 'express';
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
+import Payment from '../models/Payment.js';
+import Enrollment from '../models/Enrollment.js';
 
 const router = express.Router();
 
@@ -69,36 +71,97 @@ router.post('/order', async (req, res) => {
   }
 });
 
-router.post('/verify', (req, res) => {
-  if (!RAZORPAY_KEY_SECRET) {
-    return res.status(503).json({ error: 'Payment service not configured' });
-  }
-  
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
-  
-  if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-    return res.status(400).json({ status: 'failure', message: 'Missing payment details' });
-  }
-  
-  const hmac = crypto.createHmac('sha256', RAZORPAY_KEY_SECRET);
-  hmac.update(razorpay_order_id + '|' + razorpay_payment_id);
-  const digest = hmac.digest('hex');
+router.post('/verify', async (req, res) => {
+  try {
+    if (!process.env.RAZORPAY_KEY_SECRET) {
+      return res.status(503).json({ error: 'Payment service not configured' });
+    }
 
-  if (digest === razorpay_signature) {
-    // TODO: mark payment success in DB here
-    // You can save payment details to database
-    console.log('Payment verified successfully:', {
-      order_id: razorpay_order_id,
-      payment_id: razorpay_payment_id
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      studentId,
+      courseId,
+      amount,
+      currency,
+      method,
+      raw
+    } = req.body;
+
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return res.status(400).json({
+        status: 'failure',
+        message: 'Missing payment details'
+      });
+    }
+
+    // Generate signature
+    const generatedSignature = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+      .digest('hex');
+
+    // Secure comparison
+    const isValid = crypto.timingSafeEqual(
+      Buffer.from(generatedSignature),
+      Buffer.from(razorpay_signature)
+    );
+
+    if (!isValid) {
+      return res.status(400).json({
+        status: 'failure',
+        message: 'Invalid signature'
+      });
+    }
+
+    // Save payment
+    const paymentDoc = await Payment.create({
+      student: studentId || undefined,
+      course: courseId || undefined,
+      amount: amount || undefined,
+      currency: currency || 'INR',
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      method: method || undefined,
+      status: 'paid',
+      raw: raw || req.body
     });
-    return res.json({ 
+
+    // Activate enrollment
+    if (studentId && courseId) {
+      const enrollment = await Enrollment.findOne({
+        student: studentId,
+        course: courseId
+      });
+
+      if (!enrollment) {
+        await Enrollment.create({
+          student: studentId,
+          course: courseId,
+          status: 'active'
+        });
+      } else if (enrollment.status !== 'active') {
+        enrollment.status = 'active';
+        await enrollment.save();
+      }
+    }
+
+    return res.json({
       status: 'success',
-      message: 'Payment verified successfully',
+      message: 'Payment verified and recorded',
+      paymentId: paymentDoc._id,
       order_id: razorpay_order_id,
       payment_id: razorpay_payment_id
     });
-  } else {
-    return res.status(400).json({ status: 'failure', message: 'Invalid signature' });
+
+  } catch (error) {
+    console.error('Payment verification error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Internal server error'
+    });
   }
 });
 
