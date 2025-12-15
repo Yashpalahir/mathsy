@@ -2,6 +2,15 @@ import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Clock, Users, BookOpen, CheckCircle, Calendar, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { apiClient } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -22,6 +31,9 @@ interface Course {
 const Courses = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
 
   useEffect(() => {
     fetchCourses();
@@ -41,6 +53,96 @@ const Courses = () => {
       setIsLoading(false);
     }
   };
+
+  // Load external Razorpay script
+  const loadRazorpayScript = (): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const id = "razorpay-sdk";
+      if (document.getElementById(id)) return resolve(true);
+      const script = document.createElement("script");
+      script.id = id;
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const handleStartPayment = async (course: Course) => {
+    try {
+      setPaymentLoading(true);
+
+      const loaded = await loadRazorpayScript();
+      if (!loaded) {
+        toast.error("Failed to load payment gateway. Try again later.");
+        return;
+      }
+
+      // Get key from backend
+      const keyRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/payments/key`);
+      if (!keyRes.ok) throw new Error('Unable to fetch payment key');
+      const keyJson = await keyRes.json();
+      const key = keyJson.key;
+
+      // Create order on server
+      const orderRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/payments/order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: course.price })
+      });
+
+      if (!orderRes.ok) {
+        const body = await orderRes.json().catch(() => null);
+        throw new Error(body?.message || 'Unable to create payment order');
+      }
+
+      const order = await orderRes.json();
+
+      const options = {
+        key,
+        amount: order.amount,
+        currency: order.currency || 'INR',
+        name: course.title,
+        description: course.description,
+        order_id: order.id,
+        handler: async function (response: any) {
+          // Verify payment on backend
+          try {
+            const verifyRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/payments/verify`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(response),
+            });
+            const verifyJson = await verifyRes.json();
+            if (verifyRes.ok && verifyJson.status === 'success') {
+              toast.success('Payment successful. Enrollment complete.');
+              // Optionally create enrollment record
+              try { await apiClient.createEnrollment(course._id); } catch (e) { /* ignore */ }
+            } else {
+              toast.error(verifyJson?.message || 'Payment verification failed');
+            }
+          } catch (err) {
+            console.error(err);
+            toast.error('Payment verification failed');
+          }
+        },
+        prefill: {
+          // Prefill can be added if user info available
+        },
+        theme: { color: '#3399cc' },
+      };
+
+      // @ts-ignore
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+      setIsDialogOpen(false);
+    } catch (err) {
+      console.error(err);
+      toast.error((err as Error).message || 'Payment failed');
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
   return (
     <Layout>
       {/* Hero */}
@@ -56,6 +158,38 @@ const Courses = () => {
           </div>
         </div>
       </section>
+      {/* Payment Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={(open) => setIsDialogOpen(open)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Payment</DialogTitle>
+            <DialogDescription>
+              {selectedCourse ? (
+                <>
+                  You are about to pay <strong>₹{selectedCourse.price.toLocaleString()}</strong> for <strong>{selectedCourse.title}</strong>.
+                </>
+              ) : (
+                'Preparing payment...'
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="pt-4">
+            <div className="text-sm text-muted-foreground mb-4">Payment is powered by Razorpay. You will be redirected to a secure checkout.</div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={paymentLoading}>Cancel</Button>
+            <Button
+              variant="hero"
+              onClick={() => selectedCourse && handleStartPayment(selectedCourse)}
+              disabled={!selectedCourse || paymentLoading}
+            >
+              {paymentLoading ? 'Processing...' : `Pay ₹${selectedCourse?.price.toLocaleString()}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Courses Grid */}
       <section className="py-20 bg-background">
@@ -129,7 +263,15 @@ const Courses = () => {
                       </div>
                       <div className="flex gap-3">
                         <Button variant="outline">View Details</Button>
-                        <Button variant="hero">Enroll Now</Button>
+                        <Button
+                          variant="hero"
+                          onClick={() => {
+                            setSelectedCourse(course);
+                            setIsDialogOpen(true);
+                          }}
+                        >
+                          Enroll Now
+                        </Button>
                       </div>
                     </div>
                   </div>
