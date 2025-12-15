@@ -34,6 +34,8 @@ const Courses = () => {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [viewCourse, setViewCourse] = useState<Course | null>(null);
+  const [isViewOpen, setIsViewOpen] = useState(false);
 
   useEffect(() => {
     fetchCourses();
@@ -191,6 +193,53 @@ const Courses = () => {
         </DialogContent>
       </Dialog>
 
+      {/* View Details Dialog */}
+      <Dialog open={isViewOpen} onOpenChange={(open) => setIsViewOpen(open)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{viewCourse?.title || 'Course Details'}</DialogTitle>
+            <DialogDescription>
+              {viewCourse ? viewCourse.description : 'Loading...'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            <div className="mb-3">
+              <strong>Duration:</strong> {viewCourse?.duration || '—'}
+            </div>
+            <div className="mb-3">
+              <strong>Timing:</strong> {viewCourse?.timing || '—'}
+            </div>
+            <div className="mb-3">
+              <strong>Chapters:</strong> {viewCourse?.chapters ?? '—'}
+            </div>
+            <div className="mb-3">
+              <strong>Students Enrolled:</strong> {viewCourse?.studentsCount ?? 0}
+            </div>
+
+            <h4 className="font-semibold mt-4 mb-2">Syllabus</h4>
+            {viewCourse?.syllabus && viewCourse.syllabus.length > 0 ? (
+              <ul className="list-disc pl-5 space-y-1 text-sm text-foreground/80">
+                {viewCourse.syllabus.map((s, i) => (
+                  <li key={i}>{s}</li>
+                ))}
+              </ul>
+            ) : (
+              <div className="text-sm text-muted-foreground">Syllabus will be updated soon.</div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsViewOpen(false)}>Close</Button>
+            <Button variant="hero" onClick={() => {
+              if (viewCourse) { setSelectedCourse(viewCourse); setIsDialogOpen(true); setIsViewOpen(false); }
+            }}>
+              Enroll Now
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Courses Grid */}
       <section className="py-20 bg-background">
         <div className="container mx-auto px-4">
@@ -262,7 +311,7 @@ const Courses = () => {
                         <span className="text-sm text-muted-foreground">per year • EMI available</span>
                       </div>
                       <div className="flex gap-3">
-                        <Button variant="outline">View Details</Button>
+                        <Button variant="outline" onClick={() => { setViewCourse(course); setIsViewOpen(true); }}>View Details</Button>
                         <Button
                           variant="hero"
                           onClick={() => {
