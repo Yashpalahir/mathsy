@@ -12,7 +12,7 @@ import { apiClient } from "@/lib/api";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
-import { Loader2, Plus, Edit, Trash2, BookOpen } from "lucide-react";
+import { Loader2, Plus, Edit, Trash2, BookOpen, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface Course {
@@ -30,6 +30,18 @@ interface Course {
   studentsCount?: number;
 }
 
+interface StudyMaterial {
+  _id: string;
+  title: string;
+  description?: string;
+  category: string;
+  grade: string;
+  pdfUrl: string;
+  pages: number;
+  questions: number;
+  year?: string;
+}
+
 const Admin = () => {
   const { isAuthenticated, userType, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -37,6 +49,9 @@ const Admin = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+  const [studyMaterials, setStudyMaterials] = useState<StudyMaterial[]>([]);
+  const [isMaterialDialogOpen, setIsMaterialDialogOpen] = useState(false);
+  const [editingMaterial, setEditingMaterial] = useState<StudyMaterial | null>(null);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -49,12 +64,23 @@ const Admin = () => {
     color: "from-mathsy-blue to-primary",
     popular: false,
   });
+  const [materialFormData, setMaterialFormData] = useState({
+    title: "",
+    description: "",
+    category: "Notes",
+    grade: "",
+    pages: "",
+    questions: "",
+    year: "",
+  });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || userType !== "admin")) {
       navigate("/admin-login");
     } else if (userType === "admin") {
       fetchCourses();
+      fetchStudyMaterials();
     }
   }, [isAuthenticated, userType, authLoading, navigate]);
 
@@ -67,9 +93,21 @@ const Admin = () => {
       }
     } catch (error) {
       toast.error("Failed to load courses");
-      console.error(error);
+      // Error details omitted from console in production
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchStudyMaterials = async () => {
+    try {
+      const response = await apiClient.getStudyMaterials();
+      if (response.success && response.data) {
+        setStudyMaterials(response.data);
+      }
+    } catch (error) {
+      toast.error("Failed to load study materials");
+      // Error details omitted from console in production
     }
   };
 
@@ -152,6 +190,93 @@ const Admin = () => {
       popular: false,
     });
     setEditingCourse(null);
+  };
+
+  const handleMaterialSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (!selectedFile && !editingMaterial) {
+        toast.error("Please select a PDF file");
+        return;
+      }
+
+      const formDataToSend = new FormData();
+      formDataToSend.append('title', materialFormData.title);
+      formDataToSend.append('description', materialFormData.description);
+      formDataToSend.append('category', materialFormData.category);
+      formDataToSend.append('grade', materialFormData.grade);
+      formDataToSend.append('pages', materialFormData.pages);
+      formDataToSend.append('questions', materialFormData.questions);
+      formDataToSend.append('year', materialFormData.year);
+
+      if (selectedFile) {
+        formDataToSend.append('pdf', selectedFile);
+      }
+
+      if (editingMaterial) {
+        await apiClient.updateStudyMaterial(editingMaterial._id, {
+          title: materialFormData.title,
+          description: materialFormData.description,
+          category: materialFormData.category,
+          grade: materialFormData.grade,
+          pages: Number(materialFormData.pages) || 0,
+          questions: Number(materialFormData.questions) || 0,
+          year: materialFormData.year,
+        });
+        toast.success("Study material updated successfully");
+      } else {
+        await apiClient.createStudyMaterial(formDataToSend);
+        toast.success("Study material created successfully");
+      }
+
+      resetMaterialForm();
+      fetchStudyMaterials();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save study material");
+    }
+  };
+
+  const handleMaterialEdit = (material: StudyMaterial) => {
+    setMaterialFormData({
+      title: material.title,
+      description: material.description || "",
+      category: material.category,
+      grade: material.grade,
+      pages: material.pages.toString(),
+      questions: material.questions.toString(),
+      year: material.year || "",
+    });
+    setEditingMaterial(material);
+    setIsMaterialDialogOpen(true);
+  };
+
+  const handleMaterialDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this study material?")) {
+      return;
+    }
+
+    try {
+      await apiClient.deleteStudyMaterial(id);
+      toast.success("Study material deleted successfully");
+      fetchStudyMaterials();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete study material");
+    }
+  };
+
+  const resetMaterialForm = () => {
+    setMaterialFormData({
+      title: "",
+      description: "",
+      category: "Notes",
+      grade: "",
+      pages: "",
+      questions: "",
+      year: "",
+    });
+    setSelectedFile(null);
+    setEditingMaterial(null);
+    setIsMaterialDialogOpen(false);
   };
 
   if (authLoading) {
@@ -373,6 +498,7 @@ const Admin = () => {
                             <Button
                               variant="outline"
                               size="sm"
+                              aria-label={`Edit ${course.title}`}
                               onClick={() => handleEdit(course)}
                             >
                               <Edit className="w-4 h-4" />
@@ -380,6 +506,7 @@ const Admin = () => {
                             <Button
                               variant="outline"
                               size="sm"
+                              aria-label={`Delete ${course.title}`}
                               onClick={() => handleDelete(course._id)}
                             >
                               <Trash2 className="w-4 h-4" />
@@ -394,6 +521,193 @@ const Admin = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Study Materials Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Study Materials ({studyMaterials.length})
+            </CardTitle>
+            <CardDescription>Manage study materials and PDFs</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-between items-center mb-6">
+              <p className="text-sm text-muted-foreground">
+                Upload PDFs and organize them by category
+              </p>
+              <Button variant="hero" onClick={() => setIsMaterialDialogOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Material
+              </Button>
+            </div>
+
+            {studyMaterials.length === 0 ? (
+              <div className="text-center py-20">
+                <p className="text-muted-foreground mb-4">No study materials yet. Upload your first PDF!</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {studyMaterials.map((material) => (
+                  <div key={material._id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex-1">
+                      <h3 className="font-semibold">{material.title}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {material.category} • {material.grade}
+                        {material.pages > 0 && ` • ${material.pages} pages`}
+                        {material.questions > 0 && ` • ${material.questions} questions`}
+                        {material.year && ` • Year: ${material.year}`}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        aria-label={`Edit ${material.title}`}
+                        onClick={() => handleMaterialEdit(material)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        aria-label={`Delete ${material.title}`}
+                        onClick={() => handleMaterialDelete(material._id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Study Material Dialog */}
+        <Dialog open={isMaterialDialogOpen} onOpenChange={setIsMaterialDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>
+                {editingMaterial ? "Edit Study Material" : "Add Study Material"}
+              </DialogTitle>
+              <DialogDescription>
+                {editingMaterial ? "Update the study material details" : "Upload a PDF and add material details"}
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleMaterialSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="material-title">Title</Label>
+                <Input
+                  id="material-title"
+                  value={materialFormData.title}
+                  onChange={(e) => setMaterialFormData({ ...materialFormData, title: e.target.value })}
+                  placeholder="e.g., Quadratic Equations - Complete Notes"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="material-description">Description</Label>
+                <Textarea
+                  id="material-description"
+                  value={materialFormData.description}
+                  onChange={(e) => setMaterialFormData({ ...materialFormData, description: e.target.value })}
+                  placeholder="Optional description"
+                  rows={2}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="material-category">Category</Label>
+                  <select
+                    id="material-category"
+                    value={materialFormData.category}
+                    onChange={(e) => setMaterialFormData({ ...materialFormData, category: e.target.value })}
+                    className="w-full px-3 py-2 border border-input rounded-md bg-background"
+                    required
+                  >
+                    <option value="Notes">Notes</option>
+                    <option value="Practice Sheets">Practice Sheets</option>
+                    <option value="Previous Year Questions">Previous Year Questions</option>
+                  </select>
+                </div>
+
+                <div>
+                  <Label htmlFor="material-grade">Grade</Label>
+                  <Input
+                    id="material-grade"
+                    value={materialFormData.grade}
+                    onChange={(e) => setMaterialFormData({ ...materialFormData, grade: e.target.value })}
+                    placeholder="e.g., Class 10"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="material-pages">Pages</Label>
+                  <Input
+                    id="material-pages"
+                    type="number"
+                    value={materialFormData.pages}
+                    onChange={(e) => setMaterialFormData({ ...materialFormData, pages: e.target.value })}
+                    placeholder="0"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="material-questions">Questions</Label>
+                  <Input
+                    id="material-questions"
+                    type="number"
+                    value={materialFormData.questions}
+                    onChange={(e) => setMaterialFormData({ ...materialFormData, questions: e.target.value })}
+                    placeholder="0"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="material-year">Year</Label>
+                  <Input
+                    id="material-year"
+                    value={materialFormData.year}
+                    onChange={(e) => setMaterialFormData({ ...materialFormData, year: e.target.value })}
+                    placeholder="e.g., 2023"
+                  />
+                </div>
+              </div>
+
+              {!editingMaterial && (
+                <div>
+                  <Label htmlFor="material-pdf">PDF File</Label>
+                  <Input
+                    id="material-pdf"
+                    type="file"
+                    accept=".pdf"
+                    onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                    required
+                  />
+                </div>
+              )}
+
+              <div className="flex justify-end gap-3 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={resetMaterialForm}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" variant="hero">
+                  {editingMaterial ? "Update Material" : "Upload Material"}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );

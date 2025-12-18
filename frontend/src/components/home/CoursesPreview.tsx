@@ -32,7 +32,7 @@ export const CoursesPreview = () => {
         setCourses(response.data.slice(0, 4));
       }
     } catch (error) {
-      console.error("Failed to load courses:", error);
+      // Failed to load courses (logged)
     } finally {
       setIsLoading(false);
     }
@@ -98,11 +98,9 @@ export const CoursesPreview = () => {
                 <div className="pt-4 border-t border-border">
                   <div className="flex items-center justify-between">
                     <span className="font-display font-bold text-2xl text-primary">₹{course.price.toLocaleString()}</span>
-                    <Link to="/courses">
-                      <Button size="sm" variant="outline" className="group-hover:bg-primary group-hover:text-primary-foreground">
-                        View <ArrowRight className="w-4 h-4 ml-1" />
-                      </Button>
-                    </Link>
+                    <Button asChild size="sm" variant="outline" className="group-hover:bg-primary group-hover:text-primary-foreground">
+                      <Link to="/courses">View <ArrowRight className="w-4 h-4 ml-1" /></Link>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -112,12 +110,9 @@ export const CoursesPreview = () => {
         )}
 
         <div className="text-center mt-12">
-          <Link to="/courses">
-            <Button variant="hero" size="lg">
-              View All Courses
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
-          </Link>
+          <Button asChild variant="hero" size="lg">
+            <Link to="/courses">View All Courses<ArrowRight className="w-5 h-5 ml-2" /></Link>
+          </Button>
         </div>
       </div>
     </section>

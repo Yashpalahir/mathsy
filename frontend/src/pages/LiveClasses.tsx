@@ -1,6 +1,9 @@
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Video, Calendar, Clock, Users, ExternalLink, Play } from "lucide-react";
+import { useState } from "react";
 
 const schedule = [
   { day: "Monday", class: "Class 10", topic: "Quadratic Equations", time: "6:00 PM - 7:30 PM", teacher: "Mr. Sharma" },
@@ -12,6 +15,56 @@ const schedule = [
 ];
 
 const LiveClasses = () => {
+  const [joinModalOpen, setJoinModalOpen] = useState(false);
+  const [joinType, setJoinType] = useState<"zoom" | "meet" | null>(null);
+  const [joinInput, setJoinInput] = useState("");
+  const [joinError, setJoinError] = useState("");
+
+  const openJoinModal = (type: "zoom" | "meet") => {
+    setJoinType(type);
+    setJoinInput("");
+    setJoinError("");
+    setJoinModalOpen(true);
+  };
+
+  const submitJoin = () => {
+    const raw = joinInput.trim();
+    if (!raw) {
+      setJoinError("Please enter a meeting code or URL");
+      return;
+    }
+    // If full URL provided, open directly
+    if (/^https?:\/\//i.test(raw)) {
+      window.open(raw, "_blank");
+      setJoinModalOpen(false);
+      return;
+    }
+
+    if (joinType === "zoom") {
+      const meetingId = raw.replace(/[^0-9]/g, "");
+      if (!meetingId) {
+        setJoinError("Invalid Zoom meeting ID");
+        return;
+      }
+      const url = `https://zoom.us/j/${meetingId}`;
+      window.open(url, "_blank");
+      setJoinModalOpen(false);
+      return;
+    }
+
+    if (joinType === "meet") {
+      const code = raw.replace(/[^a-zA-Z0-9\-]/g, "");
+      if (!code) {
+        setJoinError("Invalid Meet code");
+        return;
+      }
+      const url = `https://meet.google.com/${code}`;
+      window.open(url, "_blank");
+      setJoinModalOpen(false);
+      return;
+    }
+  };
+
   return (
     <Layout>
       {/* Hero */}
@@ -40,11 +93,11 @@ const LiveClasses = () => {
               Click the button below to join your scheduled live class. Make sure you're logged in with your student account.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button variant="hero" size="lg">
+              <Button variant="hero" size="lg" onClick={() => openJoinModal("zoom")} aria-label="Join via Zoom">
                 <Video className="w-5 h-5 mr-2" />
                 Join via Zoom
               </Button>
-              <Button variant="outline" size="lg">
+              <Button variant="outline" size="lg" onClick={() => openJoinModal("meet")} aria-label="Join via Google Meet">
                 <ExternalLink className="w-5 h-5 mr-2" />
                 Join via Google Meet
               </Button>
@@ -55,6 +108,34 @@ const LiveClasses = () => {
           </div>
         </div>
       </section>
+
+      {/* Join Modal */}
+      <Dialog open={joinModalOpen} onOpenChange={setJoinModalOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{joinType === "zoom" ? "Join via Zoom" : "Join via Google Meet"}</DialogTitle>
+            <DialogDescription>
+              {joinType === "zoom"
+                ? "Enter the Zoom meeting ID or paste the full join URL."
+                : "Enter the Google Meet code (e.g. abc-defg-hij) or paste the full meeting URL."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              value={joinInput}
+              onChange={(e) => { setJoinInput((e.target as HTMLInputElement).value); setJoinError(""); }}
+              placeholder={joinType === "zoom" ? "Zoom meeting ID or URL" : "Meet code or URL"}
+              aria-label={joinType === "zoom" ? "Zoom meeting id" : "Meet code"}
+              autoFocus
+            />
+            {joinError && <div className="text-destructive text-sm mt-2">{joinError}</div>}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setJoinModalOpen(false)}>Cancel</Button>
+            <Button variant="hero" onClick={submitJoin}>Join</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Weekly Schedule */}
       <section className="py-20 bg-muted">

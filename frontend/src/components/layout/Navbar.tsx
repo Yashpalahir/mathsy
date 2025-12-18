@@ -65,12 +65,12 @@ export const Navbar = () => {
             {isAuthenticated ? (
               <>
                 {userType === "admin" && (
-                  <Link to="/admin">
-                    <Button variant="outline" size="sm">
+                  <Button asChild variant="outline" size="sm">
+                    <Link to="/admin">
                       <Settings className="w-4 h-4 mr-2" />
                       Admin
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                 )}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -102,16 +102,12 @@ export const Navbar = () => {
               </>
             ) : (
               <>
-                <Link to="/login">
-                  <Button variant="ghost" size="sm">
-                    Login
-                  </Button>
-                </Link>
-                <Link to="/courses">
-                  <Button variant="hero" size="sm">
-                    Enroll Now
-                  </Button>
-                </Link>
+                <Button asChild variant="ghost" size="sm">
+                  <Link to="/login">Login</Link>
+                </Button>
+                <Button asChild variant="hero" size="sm">
+                  <Link to="/courses">Enroll Now</Link>
+                </Button>
               </>
             )}
           </div>
@@ -120,6 +116,9 @@ export const Navbar = () => {
           <button
             className="lg:hidden p-2 rounded-lg hover:bg-muted"
             onClick={() => setIsOpen(!isOpen)}
+            aria-label="Toggle navigation"
+            aria-controls="mobile-menu"
+            aria-expanded={isOpen}
           >
             {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -127,7 +126,7 @@ export const Navbar = () => {
 
         {/* Mobile Navigation */}
         {isOpen && (
-          <div className="lg:hidden py-4 border-t border-border animate-fade-in">
+          <div id="mobile-menu" className="lg:hidden py-4 border-t border-border animate-fade-in">
             <div className="flex flex-col gap-2">
               {navLinks.map((link) => (
                 <Link
@@ -146,12 +145,12 @@ export const Navbar = () => {
               {isAuthenticated ? (
                 <div className="mt-4 px-4 space-y-2">
                   {userType === "admin" && (
-                    <Link to="/admin" onClick={() => setIsOpen(false)}>
-                      <Button variant="outline" className="w-full">
+                    <Button asChild variant="outline" className="w-full">
+                      <Link to="/admin" onClick={() => setIsOpen(false)}>
                         <Settings className="w-4 h-4 mr-2" />
                         Admin Panel
-                      </Button>
-                    </Link>
+                      </Link>
+                    </Button>
                   )}
                   <div className="px-4 py-2 text-sm">
                     <p className="font-medium">{user?.name}</p>
@@ -164,16 +163,16 @@ export const Navbar = () => {
                 </div>
               ) : (
                 <div className="flex gap-3 mt-4 px-4">
-                  <Link to="/login" className="flex-1" onClick={() => setIsOpen(false)}>
-                    <Button variant="outline" className="w-full">
+                  <Button asChild variant="outline" className="w-full">
+                    <Link to="/login" className="flex-1" onClick={() => setIsOpen(false)}>
                       Login
-                    </Button>
-                  </Link>
-                  <Link to="/courses" className="flex-1" onClick={() => setIsOpen(false)}>
-                    <Button variant="hero" className="w-full">
+                    </Link>
+                  </Button>
+                  <Button asChild variant="hero" className="w-full">
+                    <Link to="/courses" className="flex-1" onClick={() => setIsOpen(false)}>
                       Enroll Now
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                 </div>
               )}
             </div>

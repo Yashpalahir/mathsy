@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -32,9 +32,13 @@ class ApiClient {
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
     const headers: HeadersInit = {
-      'Content-Type': 'application/json',
       ...options.headers,
     };
+
+    // Only set Content-Type to application/json if body is not FormData
+    if (!(options.body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json';
+    }
 
     if (this.token) {
       headers['Authorization'] = `Bearer ${this.token}`;
@@ -170,6 +174,40 @@ class ApiClient {
   async getContacts() {
     return this.request<any[]>('/contact', {
       method: 'GET',
+    });
+  }
+
+  // Study Material endpoints
+  async getStudyMaterials() {
+    return this.request<any[]>('/study-materials', {
+      method: 'GET',
+    });
+  }
+
+  async getStudyMaterial(id: string) {
+    return this.request<any>(`/study-materials/${id}`, {
+      method: 'GET',
+    });
+  }
+
+  async createStudyMaterial(formData: FormData) {
+    return this.request<any>('/study-materials', {
+      method: 'POST',
+      body: formData,
+      headers: {}, // Let browser set content-type for FormData
+    });
+  }
+
+  async updateStudyMaterial(id: string, data: Partial<any>) {
+    return this.request<any>(`/study-materials/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteStudyMaterial(id: string) {
+    return this.request<void>(`/study-materials/${id}`, {
+      method: 'DELETE',
     });
   }
 }
