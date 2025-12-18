@@ -24,8 +24,16 @@ connectDB();
 //     };
 
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Avoid parsing multipart/form-data with JSON parser (prevents 'Unexpected token -' errors)
+app.use((req, res, next) => {
+  const contentType = (req.headers['content-type'] || '').toLowerCase();
+  if (contentType.includes('multipart/form-data')) {
+    return next();
+  }
+  express.json({ limit: '10mb' })(req, res, next);
+});
+
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Routes
 import authRoutes from './routes/authRoutes.js';
@@ -37,6 +45,7 @@ import demoBookingRoutes from './routes/demoBookingRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import testRoutes from './routes/testRoutes.js';
 import paymentRoutes from './routes/payments.js';
+import studyMaterialRoutes from './routes/studyMaterialRoutes.js';
 // ...existing code...
 
 app.use('/api/auth', authRoutes);
@@ -48,6 +57,7 @@ app.use('/api/demo-bookings', demoBookingRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/tests', testRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/study-materials', studyMaterialRoutes);
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({

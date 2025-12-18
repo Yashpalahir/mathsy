@@ -3,6 +3,12 @@ import { Mail, Phone, MapPin, Facebook, Instagram, Youtube, Twitter } from "luci
 import mathsyLogo from "@/assets/mathsy-logo.png";
 
 export const Footer = () => {
+  const socialLinks = [
+    { Icon: Facebook, url: "https://facebook.com/mathsy", label: "Facebook" },
+    { Icon: Instagram, url: "https://instagram.com/mathsy", label: "Instagram" },
+    { Icon: Youtube, url: "https://youtube.com/mathsy", label: "YouTube" },
+    { Icon: Twitter, url: "https://twitter.com/mathsy", label: "Twitter" },
+  ];
   return (
     <footer className="bg-foreground text-background">
       <div className="container mx-auto px-4 py-16">
@@ -14,10 +20,13 @@ export const Footer = () => {
               Master Maths & Science with expert guidance. Join thousands of students achieving academic excellence.
             </p>
             <div className="flex gap-3">
-              {[Facebook, Instagram, Youtube, Twitter].map((Icon, i) => (
+              {socialLinks.map(({ Icon, url, label }, i) => (
                 <a
                   key={i}
-                  href="#"
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={label}
                   className="w-10 h-10 rounded-full bg-background/10 flex items-center justify-center hover:bg-secondary hover:text-secondary-foreground transition-colors"
                 >
                   <Icon className="w-5 h-5" />
@@ -63,12 +72,12 @@ export const Footer = () => {
             <ul className="space-y-4">
               <li className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-secondary shrink-0 mt-0.5" />
-                <span className="text-background/70 text-sm">123 Education Street, Knowledge City, India - 110001</span>
+                <span className="text-background/70 text-sm">Baner, Pune, India - 411057</span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="w-5 h-5 text-secondary shrink-0" />
-                <a href="tel:+919876543210" className="text-background/70 hover:text-secondary text-sm">
-                  +91 98765 43210
+                <a href="tel:+919375919696" className="text-background/70 hover:text-secondary text-sm">
+                  +91 9375919696
                 </a>
               </li>
               <li className="flex items-center gap-3">

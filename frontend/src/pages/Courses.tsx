@@ -1,7 +1,9 @@
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Clock, Users, BookOpen, CheckCircle, Calendar, Loader2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Dialog,
   DialogContent,
@@ -33,9 +35,20 @@ const Courses = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
-  const [viewCourse, setViewCourse] = useState<Course | null>(null);
-  const [isViewOpen, setIsViewOpen] = useState(false);
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+
+  const handleEnrollClick = (course: Course) => {
+    if (!isAuthenticated) {
+      // redirect to login, preserve intended return path
+      navigate('/login', { state: { intended: `/courses` } });
+      return;
+    }
+    setSelectedCourse(course);
+    setIsDialogOpen(true);
+  };
 
   useEffect(() => {
     fetchCourses();
@@ -50,7 +63,7 @@ const Courses = () => {
       }
     } catch (error) {
       toast.error("Failed to load courses");
-      console.error(error);
+      // Error details omitted from console in production
     } finally {
       setIsLoading(false);
     }
@@ -124,7 +137,7 @@ const Courses = () => {
               toast.error(verifyJson?.message || 'Payment verification failed');
             }
           } catch (err) {
-            console.error(err);
+            // Payment verification error (logged)
             toast.error('Payment verification failed');
           }
         },
@@ -139,7 +152,7 @@ const Courses = () => {
       rzp.open();
       setIsDialogOpen(false);
     } catch (err) {
-      console.error(err);
+      // Payment flow error (logged)
       toast.error((err as Error).message || 'Payment failed');
     } finally {
       setPaymentLoading(false);
@@ -193,50 +206,39 @@ const Courses = () => {
         </DialogContent>
       </Dialog>
 
-      {/* View Details Dialog */}
-      <Dialog open={isViewOpen} onOpenChange={(open) => setIsViewOpen(open)}>
-        <DialogContent>
+      {/* Course Details Dialog */}
+      <Dialog open={isDetailsOpen} onOpenChange={(open) => setIsDetailsOpen(open)}>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{viewCourse?.title || 'Course Details'}</DialogTitle>
+            <DialogTitle>{selectedCourse ? selectedCourse.title : 'Course Details'}</DialogTitle>
             <DialogDescription>
-              {viewCourse ? viewCourse.description : 'Loading...'}
+              {selectedCourse ? selectedCourse.description : ''}
             </DialogDescription>
           </DialogHeader>
-
-          <div className="py-4">
-            <div className="mb-3">
-              <strong>Duration:</strong> {viewCourse?.duration || '—'}
+          {selectedCourse && (
+            <div className="space-y-4 py-4">
+              <div>
+                <h4 className="font-semibold">Syllabus</h4>
+                <ul className="list-disc list-inside text-sm text-muted-foreground">
+                  {selectedCourse.syllabus?.map((s, i) => (
+                    <li key={i}>{s}</li>
+                  ))}
+                </ul>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-muted-foreground">Price</div>
+                  <div className="font-display text-2xl font-bold">₹{selectedCourse.price.toLocaleString()}</div>
+                </div>
+                <div className="flex gap-3">
+                  <Button variant="outline" onClick={() => setIsDetailsOpen(false)}>Close</Button>
+                  <Button variant="hero" onClick={() => { if (selectedCourse) { setIsDetailsOpen(false); handleEnrollClick(selectedCourse); } }}>
+                    Enroll Now
+                  </Button>
+                </div>
+              </div>
             </div>
-            <div className="mb-3">
-              <strong>Timing:</strong> {viewCourse?.timing || '—'}
-            </div>
-            <div className="mb-3">
-              <strong>Chapters:</strong> {viewCourse?.chapters ?? '—'}
-            </div>
-            <div className="mb-3">
-              <strong>Students Enrolled:</strong> {viewCourse?.studentsCount ?? 0}
-            </div>
-
-            <h4 className="font-semibold mt-4 mb-2">Syllabus</h4>
-            {viewCourse?.syllabus && viewCourse.syllabus.length > 0 ? (
-              <ul className="list-disc pl-5 space-y-1 text-sm text-foreground/80">
-                {viewCourse.syllabus.map((s, i) => (
-                  <li key={i}>{s}</li>
-                ))}
-              </ul>
-            ) : (
-              <div className="text-sm text-muted-foreground">Syllabus will be updated soon.</div>
-            )}
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsViewOpen(false)}>Close</Button>
-            <Button variant="hero" onClick={() => {
-              if (viewCourse) { setSelectedCourse(viewCourse); setIsDialogOpen(true); setIsViewOpen(false); }
-            }}>
-              Enroll Now
-            </Button>
-          </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -311,13 +313,10 @@ const Courses = () => {
                         <span className="text-sm text-muted-foreground">per year • EMI available</span>
                       </div>
                       <div className="flex gap-3">
-                        <Button variant="outline" onClick={() => { setViewCourse(course); setIsViewOpen(true); }}>View Details</Button>
+                        <Button variant="outline" onClick={() => { setSelectedCourse(course); setIsDetailsOpen(true); }}>View Details</Button>
                         <Button
                           variant="hero"
-                          onClick={() => {
-                            setSelectedCourse(course);
-                            setIsDialogOpen(true);
-                          }}
+                          onClick={() => handleEnrollClick(course)}
                         >
                           Enroll Now
                         </Button>
@@ -339,8 +338,8 @@ const Courses = () => {
           <p className="text-muted-foreground mb-8">
             Contact us for course details, batch timings, or book a free demo class.
           </p>
-          <Button variant="hero" size="lg">
-            Contact Us
+          <Button asChild variant="hero" size="lg">
+            <Link to="/contact">Contact Us</Link>
           </Button>
         </div>
       </section>

@@ -11,19 +11,19 @@ const contactInfo = [
   {
     icon: Phone,
     title: "Phone",
-    content: "+91 98765 43210",
-    link: "tel:+919876543210",
+    content: "+91 9375919696",
+    link: "tel:+919375919696",
   },
   {
     icon: Mail,
     title: "Email",
-    content: "info@mathsy.com",
-    link: "mailto:info@mathsy.com",
+    content: "ayushpratapsingh291@gmail.com",
+    link: "mailto:ayushpratapsingh291@gmail.com",
   },
   {
     icon: MapPin,
     title: "Address",
-    content: "123 Education Street, Knowledge City, India - 110001",
+    content: "Baner, Pune, India - 411057",
     link: "#map",
   },
   {
@@ -100,17 +100,19 @@ const Contact = () => {
 
               {/* Map */}
               <div id="map" className="rounded-xl overflow-hidden h-64 bg-muted">
-                <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3502.0234900000003!2d77.20900000000001!3d28.6139!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjjCsDM2JzUwLjAiTiA3N8KwMTInMzIuNCJF!5e0!3m2!1sen!2sin!4v1600000000000!5m2!1sen!2sin"
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  title="Mathsy Location"
-                ></iframe>
-              </div>
+  <iframe
+    src="https://www.google.com/maps?q=Shree+Radhe+Krishna+Colony,+Marunji+Rd,+near+Shree+Ram+Chowk,+Phase+1,+Hinjawadi+Rajiv+Gandhi+Infotech+Park,+Pimpri-Chinchwad,+Pune,+Maharashtra+411057&output=embed"
+    width="100%"
+    height="100%"
+    style={{ border: 0 }}
+    allowFullScreen
+    loading="lazy"
+    referrerPolicy="no-referrer-when-downgrade"
+    title="Mathsy Location"
+  />
+</div>
+
+
             </div>
 
             {/* Contact Form */}
@@ -133,7 +135,7 @@ const Contact = () => {
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">Phone Number</label>
                       <Input
-                        placeholder="+91 98765 43210"
+                        //placeholder="+91 98765 43210"
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                         required
@@ -145,7 +147,7 @@ const Contact = () => {
                     <label className="block text-sm font-medium text-foreground mb-2">Email Address</label>
                     <Input
                       type="email"
-                      placeholder="your@email.com"
+                    //  placeholder="your@email.com"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       required

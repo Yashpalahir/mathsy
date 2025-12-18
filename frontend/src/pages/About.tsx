@@ -131,11 +131,9 @@ const About = () => {
           <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
             Join Mathsy today and experience the difference in math education.
           </p>
-          <Link to="/courses">
-            <Button variant="hero" size="lg">
-              Explore Courses
-            </Button>
-          </Link>
+          <Button asChild variant="hero" size="lg">
+            <Link to="/courses">Explore Courses</Link>
+          </Button>
         </div>
       </section>
     </Layout>

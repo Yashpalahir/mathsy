@@ -1,0 +1,208 @@
+import StudyMaterial from '../models/StudyMaterial.js';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import cloudinary from 'cloudinary';
+
+// Configure Cloudinary
+cloudinary.v2.config({
+  cloud_name: process.env.ClOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Configure multer for PDF uploads (store in memory)
+const storage = multer.memoryStorage();
+
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype === 'application/pdf') {
+    cb(null, true);
+  } else {
+    cb(new Error('Only PDF files are allowed'), false);
+  }
+};
+
+export const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  }
+});
+
+// @desc    Get all study materials
+// @route   GET /api/study-materials
+// @access  Public
+export const getStudyMaterials = async (req, res) => {
+  try {
+    const materials = await StudyMaterial.find().sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: materials.length,
+      data: materials,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Get single study material
+// @route   GET /api/study-materials/:id
+// @access  Public
+export const getStudyMaterial = async (req, res) => {
+  try {
+    const material = await StudyMaterial.findById(req.params.id);
+
+    if (!material) {
+      return res.status(404).json({
+        success: false,
+        message: 'Study material not found',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: material,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Create new study material
+// @route   POST /api/study-materials
+// @access  Private/Admin
+export const createStudyMaterial = async (req, res) => {
+  try {
+    const {
+      title,
+      description,
+      category,
+      grade,
+      pages,
+      questions,
+      year,
+    } = req.body;
+
+    // Validation
+    if (!title || !category || !grade) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide title, category, and grade',
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please upload a PDF file',
+      });
+    }
+
+    // Upload file to Cloudinary
+    const result = await new Promise((resolve, reject) => {
+      const stream = cloudinary.v2.uploader.upload_stream(
+        {
+          resource_type: 'raw',
+          folder: 'study-materials',
+          public_id: `${Date.now()}-${req.file.originalname}`,
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      stream.end(req.file.buffer);
+    });
+
+    const pdfUrl = result.secure_url;
+
+    const material = await StudyMaterial.create({
+      title,
+      description,
+      category,
+      grade,
+      pdfUrl,
+      pages: pages || 0,
+      questions: questions || 0,
+      year,
+      createdBy: req.user.id,
+    });
+
+    res.status(201).json({
+      success: true,
+      data: material,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Update study material
+// @route   PUT /api/study-materials/:id
+// @access  Private/Admin
+export const updateStudyMaterial = async (req, res) => {
+  try {
+    let material = await StudyMaterial.findById(req.params.id);
+
+    if (!material) {
+      return res.status(404).json({
+        success: false,
+        message: 'Study material not found',
+      });
+    }
+
+    material = await StudyMaterial.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: material,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Delete study material
+// @route   DELETE /api/study-materials/:id
+// @access  Private/Admin
+export const deleteStudyMaterial = async (req, res) => {
+  try {
+    const material = await StudyMaterial.findById(req.params.id);
+
+    if (!material) {
+      return res.status(404).json({
+        success: false,
+        message: 'Study material not found',
+      });
+    }
+
+    await material.deleteOne();
+
+    res.status(200).json({
+      success: true,
+      message: 'Study material deleted successfully',
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
