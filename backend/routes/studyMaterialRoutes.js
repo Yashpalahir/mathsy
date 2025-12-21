@@ -5,6 +5,7 @@ import {
   createStudyMaterial,
   updateStudyMaterial,
   deleteStudyMaterial,
+  downloadStudyMaterial,
   upload,
 } from '../controllers/studyMaterialController.js';
 import { protect, authorize } from '../middleware/auth.js';
@@ -12,6 +13,7 @@ import { protect, authorize } from '../middleware/auth.js';
 const router = express.Router();
 
 router.route('/').get(getStudyMaterials).post(protect, authorize('admin', 'teacher'), upload.single('pdf'), createStudyMaterial);
+router.get('/:id/download', downloadStudyMaterial);
 router
   .route('/:id')
   .get(getStudyMaterial)
