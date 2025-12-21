@@ -35,6 +35,10 @@ const userSchema = new mongoose.Schema(
     avatar: {
       type: String,
     },
+    studentClass: {
+      type: String,
+      trim: true,
+    },
   },
   {
     timestamps: true,

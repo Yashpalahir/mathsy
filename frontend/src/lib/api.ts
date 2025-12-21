@@ -106,6 +106,12 @@ class ApiClient {
     });
   }
 
+  async getCoursesForUser() {
+    return this.request<any[]>('/courses/my-courses', {
+      method: 'GET',
+    });
+  }
+
   async getCourse(id: string) {
     return this.request<any>(`/courses/${id}`, {
       method: 'GET',
@@ -180,6 +186,12 @@ class ApiClient {
   // Study Material endpoints
   async getStudyMaterials() {
     return this.request<any[]>('/study-materials', {
+      method: 'GET',
+    });
+  }
+
+  async getStudyMaterialsForUser() {
+    return this.request<any[]>('/study-materials/my-materials', {
       method: 'GET',
     });
   }

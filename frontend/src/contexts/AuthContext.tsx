@@ -36,7 +36,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (token) {
       apiClient.setToken(token);
       fetchUser();
-        } else {
+    } else {
       setIsLoading(false);
     }
   }, []);
@@ -89,9 +89,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signup = async (
-    email: string, 
-    password: string, 
-    fullName: string, 
+    email: string,
+    password: string,
+    fullName: string,
     userType: "student" | "parent"
   ): Promise<{ error: string | null }> => {
     try {
@@ -99,11 +99,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const role = userType === "parent" ? "student" : "student";
       const response = await apiClient.register({
         name: fullName,
-      email,
-      password,
+        email,
+        password,
         role,
       });
-      
+
       if (response.success && response.token && response.user) {
         apiClient.setToken(response.token);
         setUser(response.user);
@@ -123,16 +123,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider 
-      value={{ 
+    <AuthContext.Provider
+      value={{
         user,
         userType,
-        isAuthenticated: !!user, 
+        isAuthenticated: !!user,
         isLoading,
-        login, 
+        login,
         signup,
         adminPasswordLogin,
-        logout 
+        logout
       }}
     >
       {children}
