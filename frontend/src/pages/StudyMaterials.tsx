@@ -33,11 +33,15 @@ const StudyMaterials = () => {
 
   useEffect(() => {
     fetchMaterials();
-  }, []);
+  }, [isAuthenticated]);
 
   const fetchMaterials = async () => {
     try {
-      const response = await apiClient.getStudyMaterials();
+      // If user is authenticated, fetch materials filtered by their class
+      const response = isAuthenticated
+        ? await apiClient.getStudyMaterialsForUser()
+        : await apiClient.getStudyMaterials();
+
       setMaterials(response.data || []);
     } catch (error) {
       // Error fetching study materials (handled)

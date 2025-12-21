@@ -1,4 +1,50 @@
 import Course from '../models/Course.js';
+import User from '../models/User.js';
+
+// @desc    Get courses for authenticated user based on their class
+// @route   GET /api/courses/my-courses
+// @access  Private
+export const getCoursesForUser = async (req, res) => {
+  try {
+    // Extract user email from JWT (already available in req.user from protect middleware)
+    const userEmail = req.user.email;
+
+    // Get user with studentClass
+    const user = await User.findOne({ email: userEmail }).select('studentClass');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Check if user has a studentClass assigned
+    if (!user.studentClass) {
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        data: [],
+        message: 'No class assigned to user. Please update your profile.',
+      });
+    }
+
+    // Find courses matching the user's class (grade)
+    const courses = await Course.find({ grade: user.studentClass }).sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: courses.length,
+      studentClass: user.studentClass,
+      data: courses,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
 
 // @desc    Get all courses
 // @route   GET /api/courses
@@ -6,7 +52,7 @@ import Course from '../models/Course.js';
 export const getCourses = async (req, res) => {
   try {
     const courses = await Course.find().sort({ createdAt: -1 });
-    
+
     res.status(200).json({
       success: true,
       count: courses.length,

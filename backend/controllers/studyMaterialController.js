@@ -1,4 +1,5 @@
 import StudyMaterial from '../models/StudyMaterial.js';
+import User from '../models/User.js';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -23,6 +24,60 @@ export const upload = multer({
     fileSize: 10 * 1024 * 1024 // 10MB limit
   }
 });
+
+// @desc    Get study materials for authenticated user based on their class
+// @route   GET /api/study-materials/my-materials
+// @access  Private
+export const getStudyMaterialsForUser = async (req, res) => {
+  try {
+    // Extract user email from JWT (already available in req.user from protect middleware)
+    const userEmail = req.user.email;
+
+    // Get user with studentClass
+    const user = await User.findOne({ email: userEmail }).select('studentClass');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Check if user has a studentClass assigned
+    if (!user.studentClass) {
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        data: [],
+        message: 'No class assigned to user. Please update your profile.',
+      });
+    }
+
+    // Find study materials matching the user's class (grade)
+    const materials = await StudyMaterial.find({ grade: user.studentClass })
+      .sort({ createdAt: -1 })
+      .select('-pdf'); // Exclude PDF data
+
+    // Add virtual field for PDF URL
+    const materialsWithUrl = materials.map(item => {
+      const doc = item.toObject();
+      doc.pdfUrl = `${req.protocol}://${req.get('host')}/api/study-materials/${item._id}/download`;
+      return doc;
+    });
+
+    res.status(200).json({
+      success: true,
+      count: materials.length,
+      studentClass: user.studentClass,
+      data: materialsWithUrl,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
 
 // @desc    Get all study materials
 // @route   GET /api/study-materials

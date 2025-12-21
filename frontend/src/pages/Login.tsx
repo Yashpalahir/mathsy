@@ -8,30 +8,62 @@ import { GraduationCap, Users, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { z } from "zod";
 
+/* ---------------- ZOD SCHEMAS ---------------- */
+
 const loginSchema = z.object({
   email: z.string().trim().email("Please enter a valid email").max(255),
   password: z.string().min(6, "Password must be at least 6 characters").max(128),
 });
 
-const signupSchema = z.object({
-  fullName: z.string().trim().min(2, "Name must be at least 2 characters").max(100),
-  email: z.string().trim().email("Please enter a valid email").max(255),
-  password: z.string().min(6, "Password must be at least 6 characters").max(128),
-});
+const signupSchema = z
+  .object({
+    fullName: z.string().trim().min(2, "Name must be at least 2 characters").max(100),
+    email: z.string().trim().email("Please enter a valid email").max(255),
+    password: z.string().min(6, "Password must be at least 6 characters").max(128),
+    userType: z.enum(["student", "parent"]),
+    studentClass: z.string().optional(),
+    studentEmail: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.userType === "student" && !data.studentClass) {
+      ctx.addIssue({
+        path: ["studentClass"],
+        message: "Please enter your class",
+        code: z.ZodIssueCode.custom,
+      });
+    }
+
+    if (data.userType === "parent" && !data.studentEmail) {
+      ctx.addIssue({
+        path: ["studentEmail"],
+        message: "Please enter student's email",
+        code: z.ZodIssueCode.custom,
+      });
+    }
+  });
 
 type AuthMode = "login" | "signup";
+
+/* ---------------- COMPONENT ---------------- */
 
 const Login = () => {
   const { login, signup, isAuthenticated, userType: currentUserType, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
+
   const [userType, setUserType] = useState<"student" | "parent">("student");
   const [authMode, setAuthMode] = useState<AuthMode>("login");
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+
+  const [studentClass, setStudentClass] = useState("");
+  const [studentEmail, setStudentEmail] = useState("");
+
   const [isLoading, setIsLoading] = useState(false);
 
-  // Show loading state while checking auth or waiting for role to load
+  /* ---------------- AUTH LOADING ---------------- */
+
   if (authLoading || (isAuthenticated && currentUserType === null)) {
     return (
       <Layout>
@@ -42,13 +74,14 @@ const Login = () => {
     );
   }
 
-  // Redirect if already logged in and role is known
   if (isAuthenticated && currentUserType) {
     if (currentUserType === "admin") {
       return <Navigate to="/admin" replace />;
     }
     return <Navigate to="/student-dashboard" replace />;
   }
+
+  /* ---------------- SUBMIT ---------------- */
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,42 +92,46 @@ const Login = () => {
         const validation = loginSchema.safeParse({ email, password });
         if (!validation.success) {
           toast.error(validation.error.errors[0].message);
-          setIsLoading(false);
           return;
         }
 
         const { error } = await login(email, password);
-        if (error) {
-          toast.error(error);
-        } else {
-          toast.success("Welcome back!");
-        }
+        if (error) toast.error(error);
+        else toast.success("Welcome back!");
       } else {
-        const validation = signupSchema.safeParse({ fullName, email, password });
+        const validation = signupSchema.safeParse({
+          fullName,
+          email,
+          password,
+          userType,
+          studentClass,
+          studentEmail,
+        });
+
         if (!validation.success) {
           toast.error(validation.error.errors[0].message);
-          setIsLoading(false);
           return;
         }
 
-        const { error } = await signup(email, password, fullName, userType);
-        if (error) {
-          if (error.includes("already registered")) {
-            toast.error("This email is already registered. Please log in.");
-          } else {
-            toast.error(error);
-          }
-        } else {
+        const { error } = await signup(email, password, fullName, userType, {
+          studentClass,
+          studentEmail,
+        });
+
+        if (error) toast.error(error);
+        else {
           toast.success("Account created! Redirecting to home.");
           navigate("/", { replace: true });
         }
       }
-    } catch (err) {
+    } catch {
       toast.error("An unexpected error occurred.");
     } finally {
       setIsLoading(false);
     }
   };
+
+  /* ---------------- UI (CSS SAME) ---------------- */
 
   return (
     <Layout>
@@ -111,28 +148,33 @@ const Login = () => {
                 </p>
               </div>
 
-              {/* User Type Toggle */}
+              {/* USER TYPE TOGGLE */}
               <div className="grid grid-cols-2 gap-3 mb-6">
                 <button
                   type="button"
-                  onClick={() => setUserType("student")}
-                  className={`flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                    userType === "student"
+                  onClick={() => {
+                    setUserType("student");
+                    setStudentEmail("");
+                  }}
+                  className={`flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all ${userType === "student"
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-border text-muted-foreground hover:border-primary/50"
-                  }`}
+                    }`}
                 >
                   <GraduationCap className="w-5 h-5" />
                   <span className="font-medium">Student</span>
                 </button>
+
                 <button
                   type="button"
-                  onClick={() => setUserType("parent")}
-                  className={`flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                    userType === "parent"
+                  onClick={() => {
+                    setUserType("parent");
+                    setStudentClass("");
+                  }}
+                  className={`flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all ${userType === "parent"
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-border text-muted-foreground hover:border-primary/50"
-                  }`}
+                    }`}
                 >
                   <Users className="w-5 h-5" />
                   <span className="font-medium">Parent</span>
@@ -143,40 +185,41 @@ const Login = () => {
                 {authMode === "signup" && (
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">Full Name</label>
+                    <Input value={fullName} onChange={(e) => setFullName(e.target.value)} />
+                  </div>
+                )}
+
+                {authMode === "signup" && userType === "student" && (
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">Class</label>
                     <Input
-                      type="text"
-                      placeholder="Your full name"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      required
-                      maxLength={100}
+                      placeholder="e.g. 10th"
+                      value={studentClass}
+                      onChange={(e) => setStudentClass(e.target.value)}
+                    />
+                  </div>
+                )}
+
+                {authMode === "signup" && userType === "parent" && (
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">Student Email</label>
+                    <Input
+                      type="email"
+                      placeholder="student@email.com"
+                      value={studentEmail}
+                      onChange={(e) => setStudentEmail(e.target.value)}
                     />
                   </div>
                 )}
 
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">Email Address</label>
-                  <Input
-                    type="email"
-                    placeholder="your@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    maxLength={255}
-                  />
+                  <Input value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">Password</label>
-                  <Input
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={6}
-                    maxLength={128}
-                  />
+                  <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
                 </div>
 
                 <Button type="submit" variant="hero" size="lg" className="w-full" disabled={isLoading}>
@@ -185,8 +228,10 @@ const Login = () => {
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       {authMode === "login" ? "Signing in..." : "Creating account..."}
                     </>
+                  ) : authMode === "login" ? (
+                    `Login as ${userType === "student" ? "Student" : "Parent"}`
                   ) : (
-                    authMode === "login" ? `Login as ${userType === "student" ? "Student" : "Parent"}` : "Create Account"
+                    "Create Account"
                   )}
                 </Button>
               </form>

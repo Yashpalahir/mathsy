@@ -52,12 +52,16 @@ const Courses = () => {
 
   useEffect(() => {
     fetchCourses();
-  }, []);
+  }, [isAuthenticated]);
 
   const fetchCourses = async () => {
     try {
       setIsLoading(true);
-      const response = await apiClient.getCourses();
+      // If user is authenticated, fetch courses filtered by their class
+      const response = isAuthenticated
+        ? await apiClient.getCoursesForUser()
+        : await apiClient.getCourses();
+
       if (response.success && response.data) {
         setCourses(response.data);
       }
@@ -260,71 +264,71 @@ const Courses = () => {
                   key={course._id}
                   className="bg-card rounded-2xl shadow-card hover:shadow-card-hover transition-all overflow-hidden"
                 >
-                <div className="grid lg:grid-cols-3">
-                  {/* Header */}
-                  <div className={`bg-gradient-to-br ${course.color || 'from-mathsy-blue to-primary'} p-8 text-primary-foreground relative`}>
-                    {course.popular && (
-                      <span className="absolute top-4 right-4 bg-secondary text-secondary-foreground text-xs font-bold px-3 py-1 rounded-full">
-                        Most Popular
-                      </span>
-                    )}
-                    <h2 className="font-display text-2xl font-bold mb-4">{course.title}</h2>
-                    <p className="text-primary-foreground/80 mb-6">{course.description}</p>
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <Clock className="w-5 h-5" />
-                        <span>{course.duration}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Calendar className="w-5 h-5" />
-                        <span>{course.timing}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Users className="w-5 h-5" />
-                        <span>{course.studentsCount || 0}+ enrolled</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <BookOpen className="w-5 h-5" />
-                        <span>{course.chapters} chapters</span>
+                  <div className="grid lg:grid-cols-3">
+                    {/* Header */}
+                    <div className={`bg-gradient-to-br ${course.color || 'from-mathsy-blue to-primary'} p-8 text-primary-foreground relative`}>
+                      {course.popular && (
+                        <span className="absolute top-4 right-4 bg-secondary text-secondary-foreground text-xs font-bold px-3 py-1 rounded-full">
+                          Most Popular
+                        </span>
+                      )}
+                      <h2 className="font-display text-2xl font-bold mb-4">{course.title}</h2>
+                      <p className="text-primary-foreground/80 mb-6">{course.description}</p>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <Clock className="w-5 h-5" />
+                          <span>{course.duration}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Calendar className="w-5 h-5" />
+                          <span>{course.timing}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Users className="w-5 h-5" />
+                          <span>{course.studentsCount || 0}+ enrolled</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <BookOpen className="w-5 h-5" />
+                          <span>{course.chapters} chapters</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Syllabus */}
-                  <div className="p-8 lg:col-span-2">
-                    <h3 className="font-display font-bold text-lg text-foreground mb-4">Course Syllabus Highlights</h3>
-                    {course.syllabus && course.syllabus.length > 0 ? (
-                      <div className="grid sm:grid-cols-2 gap-3 mb-8">
-                        {course.syllabus.map((topic, i) => (
-                          <div key={i} className="flex items-center gap-2 text-foreground/80">
-                            <CheckCircle className="w-5 h-5 text-accent shrink-0" />
-                            <span>{topic}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-muted-foreground mb-8">Syllabus details coming soon...</p>
-                    )}
+                    {/* Syllabus */}
+                    <div className="p-8 lg:col-span-2">
+                      <h3 className="font-display font-bold text-lg text-foreground mb-4">Course Syllabus Highlights</h3>
+                      {course.syllabus && course.syllabus.length > 0 ? (
+                        <div className="grid sm:grid-cols-2 gap-3 mb-8">
+                          {course.syllabus.map((topic, i) => (
+                            <div key={i} className="flex items-center gap-2 text-foreground/80">
+                              <CheckCircle className="w-5 h-5 text-accent shrink-0" />
+                              <span>{topic}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-muted-foreground mb-8">Syllabus details coming soon...</p>
+                      )}
 
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-6 border-t border-border">
-                      <div>
-                        <span className="text-muted-foreground">Course Fee</span>
-                        <div className="font-display text-3xl font-bold text-primary">₹{course.price.toLocaleString()}</div>
-                        <span className="text-sm text-muted-foreground">per year • EMI available</span>
-                      </div>
-                      <div className="flex gap-3">
-                        <Button variant="outline" onClick={() => { setSelectedCourse(course); setIsDetailsOpen(true); }}>View Details</Button>
-                        <Button
-                          variant="hero"
-                          onClick={() => handleEnrollClick(course)}
-                        >
-                          Enroll Now
-                        </Button>
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-6 border-t border-border">
+                        <div>
+                          <span className="text-muted-foreground">Course Fee</span>
+                          <div className="font-display text-3xl font-bold text-primary">₹{course.price.toLocaleString()}</div>
+                          <span className="text-sm text-muted-foreground">per year • EMI available</span>
+                        </div>
+                        <div className="flex gap-3">
+                          <Button variant="outline" onClick={() => { setSelectedCourse(course); setIsDetailsOpen(true); }}>View Details</Button>
+                          <Button
+                            variant="hero"
+                            onClick={() => handleEnrollClick(course)}
+                          >
+                            Enroll Now
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
               ))}
             </div>
           )}

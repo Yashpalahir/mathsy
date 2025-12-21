@@ -17,8 +17,8 @@ const contactInfo = [
   {
     icon: Mail,
     title: "Email",
-    content: "ayushpratapsingh291@gmail.com",
-    link: "mailto:ayushpratapsingh291@gmail.com",
+    content: "info@mathsy.com",
+    link: "mailto:info@mathsy.com",
   },
   {
     icon: MapPin,
@@ -79,7 +79,7 @@ const Contact = () => {
             {/* Contact Info */}
             <div>
               <h2 className="font-display text-2xl font-bold text-foreground mb-8">Get in Touch</h2>
-              
+
               <div className="grid sm:grid-cols-2 gap-6 mb-10">
                 {contactInfo.map((item, i) => (
                   <div key={i} className="bg-card rounded-xl p-6 shadow-card">
@@ -100,17 +100,17 @@ const Contact = () => {
 
               {/* Map */}
               <div id="map" className="rounded-xl overflow-hidden h-64 bg-muted">
-  <iframe
-    src="https://www.google.com/maps?q=Shree+Radhe+Krishna+Colony,+Marunji+Rd,+near+Shree+Ram+Chowk,+Phase+1,+Hinjawadi+Rajiv+Gandhi+Infotech+Park,+Pimpri-Chinchwad,+Pune,+Maharashtra+411057&output=embed"
-    width="100%"
-    height="100%"
-    style={{ border: 0 }}
-    allowFullScreen
-    loading="lazy"
-    referrerPolicy="no-referrer-when-downgrade"
-    title="Mathsy Location"
-  />
-</div>
+                <iframe
+                  src="https://www.google.com/maps?q=Shree+Radhe+Krishna+Colony,+Marunji+Rd,+near+Shree+Ram+Chowk,+Phase+1,+Hinjawadi+Rajiv+Gandhi+Infotech+Park,+Pimpri-Chinchwad,+Pune,+Maharashtra+411057&output=embed"
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="Mathsy Location"
+                />
+              </div>
 
 
             </div>
@@ -147,7 +147,7 @@ const Contact = () => {
                     <label className="block text-sm font-medium text-foreground mb-2">Email Address</label>
                     <Input
                       type="email"
-                    //  placeholder="your@email.com"
+                      //  placeholder="your@email.com"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       required
