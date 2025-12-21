@@ -2,14 +2,8 @@ import StudyMaterial from '../models/StudyMaterial.js';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import cloudinary from 'cloudinary';
+// Cloudinary removed
 
-// Configure Cloudinary
-cloudinary.v2.config({
-  cloud_name: process.env.ClOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
 
 // Configure multer for PDF uploads (store in memory)
 const storage = multer.memoryStorage();
@@ -35,13 +29,46 @@ export const upload = multer({
 // @access  Public
 export const getStudyMaterials = async (req, res) => {
   try {
-    const materials = await StudyMaterial.find().sort({ createdAt: -1 });
+    const materials = await StudyMaterial.find().sort({ createdAt: -1 }).select('-pdf'); // Exclude PDF data
+
+    // Add virtual field for PDF URL
+    const materialsWithUrl = materials.map(item => {
+      const doc = item.toObject();
+      doc.pdfUrl = `${req.protocol}://${req.get('host')}/api/study-materials/${item._id}/download`;
+      return doc;
+    });
 
     res.status(200).json({
       success: true,
       count: materials.length,
-      data: materials,
+      data: materialsWithUrl,
     });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Download study material PDF
+// @route   GET /api/study-materials/:id/download
+// @access  Public
+export const downloadStudyMaterial = async (req, res) => {
+  try {
+    const material = await StudyMaterial.findById(req.params.id).select('pdf pdfContentType title');
+
+    if (!material || !material.pdf) {
+      return res.status(404).json({
+        success: false,
+        message: 'PDF not found',
+      });
+    }
+
+    res.set('Content-Type', material.pdfContentType || 'application/pdf');
+    // Optional: force download vs view
+    // res.set('Content-Disposition', `attachment; filename="${material.title}.pdf"`);
+    res.send(material.pdf);
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -64,9 +91,14 @@ export const getStudyMaterial = async (req, res) => {
       });
     }
 
+    // We can also return the constructed URL here
+    const doc = material.toObject();
+    if (doc.pdf) delete doc.pdf; // Assuming we didn't select it, but just safely ensuring
+    doc.pdfUrl = `${req.protocol}://${req.get('host')}/api/study-materials/${material._id}/download`;
+
     res.status(200).json({
       success: true,
-      data: material,
+      data: doc,
     });
   } catch (error) {
     res.status(500).json({
@@ -106,39 +138,28 @@ export const createStudyMaterial = async (req, res) => {
       });
     }
 
-    // Upload file to Cloudinary
-    const result = await new Promise((resolve, reject) => {
-      const stream = cloudinary.v2.uploader.upload_stream(
-        {
-          resource_type: 'raw',
-          folder: 'study-materials',
-          public_id: `${Date.now()}-${req.file.originalname}`,
-        },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      );
-      stream.end(req.file.buffer);
-    });
-
-    const pdfUrl = result.secure_url;
-
+    // Save PDF to DB (req.file.buffer exists because memoryStorage is used)
     const material = await StudyMaterial.create({
       title,
       description,
       category,
       grade,
-      pdfUrl,
+      pdf: req.file.buffer,
+      pdfContentType: req.file.mimetype,
       pages: pages || 0,
       questions: questions || 0,
       year,
       createdBy: req.user.id,
     });
 
+    // Provide the download URL in the response
+    const doc = material.toObject();
+    delete doc.pdf;
+    doc.pdfUrl = `${req.protocol}://${req.get('host')}/api/study-materials/${material._id}/download`;
+
     res.status(201).json({
       success: true,
-      data: material,
+      data: doc,
     });
   } catch (error) {
     res.status(500).json({

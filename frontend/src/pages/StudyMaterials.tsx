@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { apiClient } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { SecurePDFViewer } from "@/components/SecurePDFViewer";
 
 interface StudyMaterial {
   _id: string;
@@ -39,7 +40,7 @@ const StudyMaterials = () => {
       const response = await apiClient.getStudyMaterials();
       setMaterials(response.data || []);
     } catch (error) {
-        // Error fetching study materials (handled)
+      // Error fetching study materials (handled)
     } finally {
       setLoading(false);
     }
@@ -149,11 +150,9 @@ const StudyMaterials = () => {
             </DialogDescription>
           </DialogHeader>
           {selectedPdf && (
-            <iframe
-              src={selectedPdf}
-              className="w-full h-full border-0"
-              title="PDF Viewer"
-            />
+            <div className="w-full h-full overflow-hidden">
+              <SecurePDFViewer url={selectedPdf} />
+            </div>
           )}
         </DialogContent>
       </Dialog>
