@@ -23,7 +23,11 @@ connectDB();
 //       credentials: true,
 //     };
 
+import passport from 'passport';
+import './config/passport.js'; // Import config
+
 app.use(cors());
+app.use(passport.initialize());
 // Avoid parsing multipart/form-data with JSON parser (prevents 'Unexpected token -' errors)
 app.use((req, res, next) => {
   const contentType = (req.headers['content-type'] || '').toLowerCase();
@@ -91,7 +95,9 @@ app.listen(PORT, () => {
   console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🌐 API Base URL: http://localhost:${PORT}/api`);
   console.log(`💳 Payment Routes: http://localhost:${PORT}/api/payments`);
-  
+  console.log("GOOGLE_CLIENT_ID:", process.env.GOOGLE_CLIENT_ID);
+
+
   // Check Razorpay configuration
   const hasRazorpayKey = process.env.RAZORPAY_KEY_ID || process.env.key_id;
   if (hasRazorpayKey) {
@@ -99,14 +105,17 @@ app.listen(PORT, () => {
   } else {
     console.log(`⚠️  Razorpay: Not configured (set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env)`);
   }
-  
+
   // Check MongoDB configuration
   if (process.env.MONGODB_URI) {
     console.log(`📦 MongoDB: URI configured`);
+    console.log("GOOGLE_CLIENT_ID:", process.env.GOOGLE_CLIENT_ID);
+
   } else {
     console.log(`⚠️  MongoDB: Not configured (set MONGODB_URI in .env)`);
+
   }
-  
+
   console.log('========================================\n');
 });
 

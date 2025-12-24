@@ -23,12 +23,13 @@ const studyMaterialSchema = new mongoose.Schema(
       required: [true, 'Please provide a grade'],
       trim: true,
     },
-    pdf: {
+    pdfData: {
       type: Buffer,
-      select: false, // Do not return by default to avoid huge responses
+      required: [true, 'Please provide PDF data'],
     },
     pdfContentType: {
       type: String,
+      default: 'application/pdf',
     },
     pages: {
       type: Number,

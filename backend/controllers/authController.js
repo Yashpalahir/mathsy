@@ -1,19 +1,21 @@
 import User from '../models/User.js';
+import Otp from '../models/Otp.js';
 import generateToken from '../utils/generateToken.js';
+import sendEmail from '../utils/sendEmail.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@mathsy.local';
-const ADMIN_NAME = process.env.ADMIN_NAME || 'Admin';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+const ADMIN_NAME = process.env.ADMIN_NAME;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
 // @access  Public
 export const register = async (req, res) => {
   try {
-    const { name, email, password, role, phone } = req.body;
+    const { name, email, password, role, phone, otp } = req.body;
 
     // Validation
     if (!name || !email || !password) {
@@ -21,6 +23,19 @@ export const register = async (req, res) => {
         success: false,
         message: 'Please provide name, email, and password',
       });
+    }
+
+    // Verify OTP if provided (Highly recommended to enforce)
+    if (otp) {
+      const validOtp = await Otp.findOne({ email, otp });
+      if (!validOtp) {
+        return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
+      }
+      // Delete OTP after usage
+      await Otp.findOneAndDelete({ email, otp });
+    } else {
+      // NOTE: For security, you should enforce OTP here.
+      // return res.status(400).json({ success: false, message: 'OTP is required' });
     }
 
     // Check if user exists
@@ -125,6 +140,9 @@ export const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
 
+    console.log('👤 [GET ME] Fetching user data for:', user.email);
+    console.log('👤 [GET ME] isProfileComplete:', user.isProfileComplete);
+
     res.status(200).json({
       success: true,
       user: {
@@ -134,6 +152,10 @@ export const getMe = async (req, res) => {
         role: user.role,
         phone: user.phone,
         avatar: user.avatar,
+        isProfileComplete: user.isProfileComplete, // 🔥 CRITICAL FIX: This was missing!
+        username: user.username,
+        studentClass: user.studentClass,
+        address: user.address,
       },
     });
   } catch (error) {
@@ -273,3 +295,221 @@ export const adminLogin = async (req, res) => {
   }
 };
 
+// @desc    Send OTP to email
+// @route   POST /api/auth/send-otp
+// @access  Public
+export const sendOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Please provide an email' });
+    }
+
+    // Generate 6 digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Store OTP in separate collection
+    await Otp.findOneAndUpdate(
+      { email },
+      { otp },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    // Send email
+    const message = `Your OTP for Mathsy login/signup is: ${otp}. It expires in 10 minutes.`;
+
+    try {
+      await sendEmail({
+        email,
+        subject: 'Mathsy OTP Verification',
+        message: message,
+        html: `<h1>Mathsy OTP Verification</h1><p>${message}</p>`
+      });
+
+      res.status(200).json({
+        success: true,
+        message: `OTP sent to ${email}`,
+      });
+    } catch (err) {
+      return res.status(500).json({ success: false, message: 'Email could not be sent' });
+    }
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Verify OTP (without login or creation)
+// @route   POST /api/auth/verify-otp
+// @access  Public
+export const verifyOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({ success: false, message: 'Provide email and OTP' });
+    }
+
+    const validOtp = await Otp.findOne({ email, otp });
+
+    if (validOtp) {
+      res.status(200).json({ success: true, message: 'OTP Verified' });
+    } else {
+      res.status(400).json({ success: false, message: 'Invalid OTP' });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Login or Verify with OTP
+// @route   POST /api/auth/login-otp
+// @access  Public
+export const loginWithOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({ success: false, message: 'Provide email and OTP' });
+    }
+
+    // 1. Verify OTP from Otp collection
+    const validOtp = await Otp.findOne({ email, otp });
+
+    // 2. Check if user acts (for legacy or just validation if we kept logic there, but now we use Otp model)
+    // Actually, we should check invalid OTP first.
+    if (!validOtp) {
+      // Check legacy user field just in case? No, let's stick to new model logic for consistency.
+      // Or if verified via User model (old way)?
+      // Let's assume we migrated fully.
+      return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
+    }
+
+    // OTP is valid. Now check if User exists.
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      // New User -> Return success but no token (frontend should redirect to Signup details)
+      return res.status(200).json({
+        success: true,
+        message: 'OTP Verified',
+        isNewUser: true,
+        // No token yet, because they need to register
+      });
+    }
+
+    // Existing User -> Login
+    // Clear OTP from collection
+    await Otp.findOneAndDelete({ email });
+
+    const token = generateToken(user._id);
+
+    res.status(200).json({
+      success: true,
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isProfileComplete: user.isProfileComplete,
+      },
+      isNewUser: false,
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Google Auth (Mocked for now)
+// @route   POST /api/auth/google
+// @access  Public
+export const googleAuth = async (req, res) => {
+  try {
+    const { email, name, googleId, photo } = req.body; // In real app, verify ID token
+
+    // MOCK VERIFICATION: We accept the data sent from frontend for now.
+
+    let user = await User.findOne({ email });
+    if (!user) {
+      user = await User.create({
+        email,
+        name,
+        googleId,
+        avatar: photo,
+        role: 'student',
+        isProfileComplete: false,
+      });
+    } else {
+      // Update googleId if missing
+      if (!user.googleId) {
+        user.googleId = googleId;
+        await user.save({ validateBeforeSave: false });
+      }
+    }
+
+    const token = generateToken(user._id);
+
+    res.status(200).json({
+      success: true,
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isProfileComplete: user.isProfileComplete,
+        avatar: user.avatar,
+      },
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Complete Profile
+// @route   POST /api/auth/complete-profile
+// @access  Private
+export const completeProfile = async (req, res) => {
+  try {
+    // User is already authenticated via Token
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const { username, studentClass, address, avatar } = req.body;
+
+    // Basic validation
+    if (!username || !studentClass || !address) {
+      return res.status(400).json({ success: false, message: 'Please provide all fields' });
+    }
+
+    // Update fields
+    user.username = username;
+    user.studentClass = studentClass;
+    user.address = address;
+    if (avatar) user.avatar = avatar;
+    user.isProfileComplete = true;
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isProfileComplete: user.isProfileComplete,
+        username: user.username,
+        studentClass: user.studentClass,
+        address: user.address,
+        avatar: user.avatar,
+      },
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
