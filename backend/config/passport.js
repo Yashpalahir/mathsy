@@ -13,9 +13,6 @@ console.log('🔧 [PASSPORT] Redirect URI:', process.env.GOOGLE_REDIRECT_URI || 
 passport.use(
     new GoogleStrategy(
         {
-            // clientID: "527442118680-mj937n439e2oj6v3eep1a7is5ujumsuu.apps.googleusercontent.com",
-            // clientSecret: "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",
-            // callbackURL: "http://localhost:8000/api/auth/google/callback",
             clientID: process.env.GOOGLE_CLIENT_ID,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
             callbackURL: process.env.GOOGLE_REDIRECT_URI,

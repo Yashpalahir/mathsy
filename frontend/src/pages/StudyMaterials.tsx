@@ -52,7 +52,7 @@ const StudyMaterials = () => {
   const fetchMaterials = async () => {
     try {
       console.log("📡 Fetching study materials...");
-      const response = await apiClient.getStudyMaterials();
+      const response = await apiClient.getStudyMaterials() as any;
       console.log("✅ Materials response:", response);
 
       if (response.success && response.data) {
@@ -185,43 +185,53 @@ const StudyMaterials = () => {
       {/* PDF VIEWER */}
       <Dialog
         open={!!selectedPdf}
-        onOpenChange={() => setSelectedPdf(null)}
+        onOpenChange={() => {
+          console.log('🚪 [PDF VIEWER] Closing dialog');
+          if (selectedPdf) {
+            URL.revokeObjectURL(selectedPdf); // Clean up blob URL
+          }
+          setSelectedPdf(null);
+        }}
       >
-        <DialogContent className="max-w-4xl h-[80vh]">
+        <DialogContent className="max-w-6xl h-[90vh]">
           <DialogHeader>
-            <DialogTitle>Study Material</DialogTitle>
+            <DialogTitle>Study Material PDF</DialogTitle>
             <DialogDescription>
-              PDF preview
+              Use Ctrl/Cmd + Scroll to zoom. Right-click to download.
             </DialogDescription>
           </DialogHeader>
 
           {selectedPdf && (
-            <object
-              data={selectedPdf}
-              type="application/pdf"
-              className="w-full h-full"
-              onLoad={() =>
-                console.log("✅ PDF loaded successfully")
-              }
-              onError={(e) =>
-                console.error("❌ PDF failed to load", e)
-              }
-            >
-              <div className="flex flex-col items-center justify-center h-full">
-                <p className="mb-4 text-muted-foreground">
-                  PDF preview not supported in this browser.
-                </p>
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    window.open(selectedPdf, "_blank")
-                  }
-                >
-                  Open PDF in new tab
-                </Button>
-              </div>
-            </object>
+            <div className="w-full h-full overflow-hidden rounded-md border">
+              <iframe
+                src={selectedPdf}
+                className="w-full h-full"
+                title="PDF Viewer"
+                onLoad={() => {
+                  console.log('✅ [PDF VIEWER] PDF loaded successfully in iframe');
+                }}
+                onError={(e) => {
+                  console.error('❌ [PDF VIEWER] PDF failed to load in iframe:', e);
+                }}
+              />
+            </div>
           )}
+
+          {/* Fallback message */}
+          <div className="text-center text-sm text-muted-foreground mt-2">
+            <p>
+              Can't see the PDF?{' '}
+              <button
+                className="text-primary underline hover:no-underline"
+                onClick={() => {
+                  console.log('📥 [PDF VIEWER] Opening PDF in new tab');
+                  if (selectedPdf) window.open(selectedPdf, '_blank');
+                }}
+              >
+                Open in new tab
+              </button>
+            </p>
+          </div>
         </DialogContent>
       </Dialog>
     </Layout>
