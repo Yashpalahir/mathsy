@@ -19,7 +19,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ error: string | null }>;
-  signup: (email: string, password: string, fullName: string, userType: "student" | "parent") => Promise<{ error: string | null }>;
+  signup: (email: string, password: string, fullName: string, userType: "student" | "parent", studentClass?: string) => Promise<{ error: string | null }>;
   adminPasswordLogin: (password: string) => Promise<{ error: string | null }>;
   sendOtp: (email: string) => Promise<{ error: string | null; message?: string }>;
   verifyOtp: (email: string, otp: string) => Promise<{ error: string | null; message?: string }>;
@@ -98,7 +98,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     email: string,
     password: string,
     fullName: string,
-    userType: "student" | "parent"
+    userType: "student" | "parent",
+    studentClass?: string
   ): Promise<{ error: string | null }> => {
     try {
       // Map "parent" to "student" for now, or you can add parent role to backend
@@ -108,6 +109,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         email,
         password,
         role,
+        studentClass,
       });
 
       if (response.success && response.token && response.user) {

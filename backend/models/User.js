@@ -24,7 +24,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['student', 'teacher', 'admin'],
+      enum: ['student', 'parent', 'admin'],
       default: 'student',
     },
     phone: {
@@ -36,6 +36,7 @@ const userSchema = new mongoose.Schema(
     },
     studentClass: {
       type: String,
+      enum: ['Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'],
       trim: true,
     },
     googleId: {
