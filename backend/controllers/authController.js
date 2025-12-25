@@ -6,22 +6,31 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
-const ADMIN_NAME = process.env.ADMIN_NAME;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@mathsy.com';
+const ADMIN_NAME = process.env.ADMIN_NAME || 'Admin';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin';
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
 // @access  Public
 export const register = async (req, res) => {
   try {
-    const { name, email, password, role, phone, otp } = req.body;
+    const { name, email, password, role, phone, otp, studentClass } = req.body;
 
     // Validation
     if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
         message: 'Please provide name, email, and password',
+      });
+    }
+
+    // Validate studentClass if provided (Class 6-10)
+    const validClasses = ['Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'];
+    if (studentClass && !validClasses.includes(studentClass)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid class selection. Please select a class from 6 to 10.',
       });
     }
 
@@ -54,6 +63,7 @@ export const register = async (req, res) => {
       password,
       role: role || 'student',
       phone,
+      studentClass: studentClass || undefined,
     });
 
     // Generate token

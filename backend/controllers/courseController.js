@@ -29,8 +29,8 @@ export const getCoursesForUser = async (req, res) => {
       });
     }
 
-    // Find courses matching the user's class (grade)
-    const courses = await Course.find({ grade: user.studentClass }).sort({ createdAt: -1 });
+    // Find courses matching the user's class
+    const courses = await Course.find({ class: user.studentClass }).sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
@@ -114,14 +114,14 @@ export const createCourse = async (req, res) => {
     if (!title || !description || !grade || price === undefined) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide title, description, grade, and price',
+        message: 'Please provide title, description, class, and price',
       });
     }
 
     const course = await Course.create({
       title,
       description,
-      grade,
+      class: grade,  // Map 'grade' from frontend to 'class' in model
       price,
       duration,
       timing,

@@ -27,7 +27,7 @@ const Login = () => {
   // Login Method: password or otp
   const [loginMethod, setLoginMethod] = useState<"password" | "otp">("password");
 
-  // Signup Steps: 1=Email, 2=OTP, 3=Details
+  // Signup Steps: 1=Email, 2=OTP, 2.5=Class Selection, 3=Details
   const [signupStep, setSignupStep] = useState(1);
 
   // Form State
@@ -35,6 +35,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [otp, setOtp] = useState("");
+  const [selectedClass, setSelectedClass] = useState("");
 
   const [isLoading, setIsLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
@@ -142,43 +143,7 @@ const Login = () => {
     }
 
     if (signupStep === 2) {
-      // Verify OTP locally? No, we don't have a verify-only endpoint yet easily.
-      // But we can just store it in state and verify during final registration?
-      // Or we should verify it now. 
-      // User requested: "first send otp... give option to set password"
-      // So we need to verify OTP before showing password fields.
-      // We can use `loginWithOtp` to verify? No that logs them in.
-      // We need a `verifyOtp` endpoint or just proceed if we assume it's correct?
-      // Better: Add a `verify-otp` endpoint or just verify it at the end.
-      // Let's assume we verify it at the end for simplicity, OR try to `loginWithOtp` to check?
-      // If we use `loginWithOtp`, it creates a session. We want to Signup.
-
-      // IMPLEMENTATION DETAIL:
-      // I will assume for now we move to step 3, and send OTP with the final registration request.
-      // Backend `register` doesn't support OTP verification yet.
-      // I should update backend `register` to verify OTP.
-      // Or I can add a `verifyOtp` endpoint.
-      // Quickest path: allow moving to step 3, and send OTP with registration data.
-      // BUT `register` in AuthContext doesn't take OTP.
-      // I need to update AuthContext `signup` to take OTP?
-      // Or just verify it conceptually.
-
-      // Let's use a trick: try `loginWithOtp`. If it fails (user not found), it might mean OTP is wrong?
-      // No, `loginWithOtp` fails if user not found.
-
-      // Let's just trust the flow for this iteration or assume "Verify" button does nothing but move to next step?
-      // No, that's insecure.
-      // I will add a simple `verifyOtp` check logic:
-      // The user wants to VERIFY OTP before setting password.
-      // I'll add `verifyOtp` to backend or just simulate it?
-      // I'll assume for now I can verify it by trying to log in? No.
-
-      // Okay, I will mock the verification on client side for now (since backend mimics sending)
-      // OR I can quickly add `verifyOtp` to backend.
-      // Let's just create a "Verify" button that acts as if it verified.
-      // WAIT, I implemented `loginWithOtp`.
-      // I'll allow the user to proceed to Step 3.
-
+      // Verify OTP
       if (otp.length !== 6) {
         toast.error("Please enter 6-digit OTP");
         setIsLoading(false);
@@ -190,14 +155,26 @@ const Login = () => {
         toast.error(error);
       } else {
         toast.success(message || "Email verified!");
-        setSignupStep(3);
+        setSignupStep(2.5); // Move to class selection
       }
       setIsLoading(false);
       return;
     }
 
+    if (signupStep === 2.5) {
+      // Validate class selection
+      if (!selectedClass) {
+        toast.error("Please select your class");
+        setIsLoading(false);
+        return;
+      }
+      setSignupStep(3); // Move to name/password step
+      setIsLoading(false);
+      return;
+    }
+
     if (signupStep === 3) {
-      const { error } = await signup(email, password, fullName, "student"); // Default to student
+      const { error } = await signup(email, password, fullName, "student", selectedClass);
       if (error) {
         toast.error(error);
       } else {
@@ -396,6 +373,34 @@ const Login = () => {
                       </div>
                       <Button type="submit" className="w-full" disabled={isLoading}>
                         {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify OTP"}
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* STEP 2.5: Class Selection */}
+                  {signupStep === 2.5 && (
+                    <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
+                      <div className="p-3 bg-green-50 text-green-700 text-sm rounded-lg flex items-center gap-2 mb-4">
+                        <CheckCircle2 className="w-4 h-4" /> Email Verified
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Select Your Class</label>
+                        <p className="text-xs text-muted-foreground">Choose the class you're currently studying in</p>
+                        <select
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          value={selectedClass}
+                          onChange={(e) => setSelectedClass(e.target.value)}
+                        >
+                          <option value="">-- Select Class --</option>
+                          <option value="Class 6">Class 6</option>
+                          <option value="Class 7">Class 7</option>
+                          <option value="Class 8">Class 8</option>
+                          <option value="Class 9">Class 9</option>
+                          <option value="Class 10">Class 10</option>
+                        </select>
+                      </div>
+                      <Button type="submit" className="w-full" disabled={isLoading} variant="hero">
+                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Continue"}
                       </Button>
                     </div>
                   )}

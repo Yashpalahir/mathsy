@@ -13,9 +13,10 @@ const courseSchema = new mongoose.Schema(
       required: [true, 'Please provide a course description'],
       trim: true,
     },
-    grade: {
+    class: {
       type: String,
-      required: [true, 'Please provide a grade'],
+      required: [true, 'Please provide a class'],
+      enum: ['Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'],
       trim: true,
     },
     price: {

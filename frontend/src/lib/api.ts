@@ -71,6 +71,7 @@ class ApiClient {
     password: string;
     role?: string;
     phone?: string;
+    studentClass?: string;
   }) {
     return this.request<{ token: string; user: any }>('/auth/register', {
       method: 'POST',
@@ -136,6 +137,12 @@ class ApiClient {
   // Course endpoints
   async getCourses() {
     return this.request<any[]>('/courses', {
+      method: 'GET',
+    });
+  }
+
+  async getCoursesForUser() {
+    return this.request<any[]>('/courses/my-courses', {
       method: 'GET',
     });
   }
