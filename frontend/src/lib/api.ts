@@ -136,7 +136,7 @@ class ApiClient {
 
   // Course endpoints
   async getCourses() {
-    return this.request<any[]>('/courses', {
+    return this.request<{ data: any[] }>('/courses', {
       method: 'GET',
     });
   }
@@ -198,6 +198,18 @@ class ApiClient {
     });
   }
 
+  async checkEnrollment(courseId: string) {
+    return this.request<{ enrolled: boolean; enrollment: any }>(`/enrollments/check/${courseId}`, {
+      method: 'GET',
+    });
+  }
+
+  async getCourseVideos(courseId: string) {
+    return this.request<any>(`/course-videos/${courseId}`, {
+      method: 'GET',
+    });
+  }
+
   // Contact endpoints
   async createContact(data: {
     name: string;
@@ -220,7 +232,7 @@ class ApiClient {
 
   // Study Material endpoints
   async getStudyMaterials() {
-    return this.request<any[]>('/study-materials', {
+    return this.request<{ data: any[] }>('/study-materials', {
       method: 'GET',
     });
   }
@@ -243,6 +255,12 @@ class ApiClient {
     return this.request<any>(`/study-materials/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
+    });
+  }
+
+  async deleteStudyMaterial(id: string) {
+    return this.request<void>(`/study-materials/${id}`, {
+      method: 'DELETE',
     });
   }
 

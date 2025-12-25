@@ -43,10 +43,16 @@ const studyMaterialSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    course: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Course',
+      default: null,
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     },
+
   },
   {
     timestamps: true,

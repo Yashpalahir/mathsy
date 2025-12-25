@@ -37,6 +37,7 @@ const Courses = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [enrolledCourseIds, setEnrolledCourseIds] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
 
@@ -46,12 +47,23 @@ const Courses = () => {
       navigate('/login', { state: { intended: `/courses` } });
       return;
     }
+
+    // Check if already enrolled
+    if (enrolledCourseIds.has(course._id)) {
+      // Navigate to video player
+      navigate(`/course/${course._id}/watch`);
+      return;
+    }
+
     setSelectedCourse(course);
     setIsDialogOpen(true);
   };
 
   useEffect(() => {
     fetchCourses();
+    if (isAuthenticated) {
+      fetchEnrollments();
+    }
   }, [isAuthenticated]);
 
   const fetchCourses = async () => {
@@ -70,6 +82,18 @@ const Courses = () => {
       // Error details omitted from console in production
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchEnrollments = async () => {
+    try {
+      const response = await apiClient.getEnrollments();
+      if (response.success && response.data) {
+        const enrolledIds = new Set(response.data.map((e: any) => e.course._id || e.course));
+        setEnrolledCourseIds(enrolledIds);
+      }
+    } catch (error) {
+      // Silently fail - enrollments are not critical for page load
     }
   };
 
@@ -134,9 +158,15 @@ const Courses = () => {
             });
             const verifyJson = await verifyRes.json();
             if (verifyRes.ok && verifyJson.status === 'success') {
-              toast.success('Payment successful. Enrollment complete.');
-              // Optionally create enrollment record
-              try { await apiClient.createEnrollment(course._id); } catch (e) { /* ignore */ }
+              // Create enrollment with active status
+              try {
+                await apiClient.createEnrollment(course._id);
+                // Update enrolled courses list
+                setEnrolledCourseIds(prev => new Set([...prev, course._id]));
+                toast.success('Payment successful! You are now enrolled.');
+              } catch (e) {
+                toast.error('Payment successful but enrollment failed. Contact support.');
+              }
             } else {
               toast.error(verifyJson?.message || 'Payment verification failed');
             }
@@ -322,7 +352,7 @@ const Courses = () => {
                             variant="hero"
                             onClick={() => handleEnrollClick(course)}
                           >
-                            Enroll Now
+                            {enrolledCourseIds.has(course._id) ? 'Show Course' : 'Enroll Now'}
                           </Button>
                         </div>
                       </div>
