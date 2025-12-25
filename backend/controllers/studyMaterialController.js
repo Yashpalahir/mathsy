@@ -27,7 +27,39 @@ export const upload = multer({
 // @access  Public
 export const getStudyMaterials = async (req, res) => {
   try {
-    const materials = await StudyMaterial.find().sort({ createdAt: -1 });
+    // For authenticated users, filter by enrolled courses
+    let query = {};
+
+    if (req.user) {
+      // Admins and teachers should see all study materials
+      if (req.user.role === 'admin' || req.user.role === 'teacher') {
+        query = {};
+      } else {
+        // Import Enrollment model
+        const Enrollment = (await import('../models/Enrollment.js')).default;
+
+        // Get user's enrolled courses - use 'student' field as per Enrollment model
+        const enrollments = await Enrollment.find({
+          student: req.user.id,
+          status: 'active',
+        }).select('course');
+
+        const enrolledCourseIds = enrollments.map(e => e.course);
+
+        // Get materials for enrolled courses OR materials without a course (for backward compatibility)
+        query = {
+          $or: [
+            { course: { $in: enrolledCourseIds } },
+            { course: null },
+          ],
+        };
+      }
+    }
+
+    const materials = await StudyMaterial.find(query)
+      .select('-pdfData') // Exclude large buffer from list view
+      .populate('course', 'title class')
+      .sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
@@ -35,6 +67,7 @@ export const getStudyMaterials = async (req, res) => {
       data: materials,
     });
   } catch (error) {
+    console.error('Error fetching materials:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'Server error',
@@ -81,6 +114,7 @@ export const createStudyMaterial = async (req, res) => {
       pages,
       questions,
       year,
+      course,
     } = req.body;
 
     // Validation
@@ -108,6 +142,7 @@ export const createStudyMaterial = async (req, res) => {
       pages: pages || 0,
       questions: questions || 0,
       year,
+      course: course || null,
       createdBy: req.user.id,
     });
 
@@ -185,28 +220,28 @@ export const deleteStudyMaterial = async (req, res) => {
 // @route   GET /api/study-materials/:id/pdf
 // @access  Public
 export const getStudyMaterialPdf = async (req, res) => {
-    try {
-        const material = await StudyMaterial.findById(req.params.id);
+  try {
+    const material = await StudyMaterial.findById(req.params.id);
 
-        if (!material) {
-            return res.status(404).json({
-                success: false,
-                message: 'Study material not found',
-            });
-        }
-
-        res.set({
-            'Content-Type': material.pdfContentType,
-            'Content-Disposition': `inline; filename="${material.title}.pdf"`,
-        });
-
-        res.send(material.pdfData);
-
-    } catch (error) {
-        console.error('Error serving PDF:', error);
-        res.status(500).json({
-            success: false,
-            message: error.message || 'Server error',
-        });
+    if (!material) {
+      return res.status(404).json({
+        success: false,
+        message: 'Study material not found',
+      });
     }
+
+    res.set({
+      'Content-Type': material.pdfContentType,
+      'Content-Disposition': `inline; filename="${material.title}.pdf"`,
+    });
+
+    res.send(material.pdfData);
+
+  } catch (error) {
+    console.error('Error serving PDF:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
 };

@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { Loader2, Plus, Edit, Trash2, BookOpen, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import Select from "react-select";
 
 interface Course {
   _id: string;
@@ -40,6 +41,11 @@ interface StudyMaterial {
   pages: number;
   questions: number;
   year?: string;
+  course?: {
+    _id: string;
+    title: string;
+    class: string;
+  };
 }
 
 const Admin = () => {
@@ -72,6 +78,7 @@ const Admin = () => {
     pages: "",
     questions: "",
     year: "",
+    course: "",
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -208,6 +215,9 @@ const Admin = () => {
       formDataToSend.append('pages', materialFormData.pages);
       formDataToSend.append('questions', materialFormData.questions);
       formDataToSend.append('year', materialFormData.year);
+      if (materialFormData.course) {
+        formDataToSend.append('course', materialFormData.course);
+      }
 
       if (selectedFile) {
         formDataToSend.append('pdf', selectedFile);
@@ -222,6 +232,7 @@ const Admin = () => {
           pages: Number(materialFormData.pages) || 0,
           questions: Number(materialFormData.questions) || 0,
           year: materialFormData.year,
+          course: materialFormData.course || null,
         });
         toast.success("Study material updated successfully");
       } else {
@@ -245,6 +256,7 @@ const Admin = () => {
       pages: material.pages.toString(),
       questions: material.questions.toString(),
       year: material.year || "",
+      course: material.course?._id || "",
     });
     setEditingMaterial(material);
     setIsMaterialDialogOpen(true);
@@ -273,6 +285,7 @@ const Admin = () => {
       pages: "",
       questions: "",
       year: "",
+      course: "",
     });
     setSelectedFile(null);
     setEditingMaterial(null);
@@ -561,6 +574,7 @@ const Admin = () => {
                       <h3 className="font-semibold">{material.title}</h3>
                       <p className="text-sm text-muted-foreground">
                         {material.category} • {material.grade}
+                        {material.course && ` • ${material.course.title}`}
                         {material.pages > 0 && ` • ${material.pages} pages`}
                         {material.questions > 0 && ` • ${material.questions} questions`}
                         {material.year && ` • Year: ${material.year}`}
@@ -658,6 +672,37 @@ const Admin = () => {
                     <option value="Class 10">Class 10</option>
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <Label htmlFor="material-course">Course (Optional)</Label>
+                <Select
+                  id="material-course"
+                  options={courses.map(course => ({ value: course._id, label: `${course.title} (${course.grade})` }))}
+                  value={courses.find(c => c._id === materialFormData.course) ? { value: materialFormData.course, label: courses.find(c => c._id === materialFormData.course)!.title } : null}
+                  onChange={(option) => setMaterialFormData({ ...materialFormData, course: option?.value || "" })}
+                  isClearable
+                  placeholder="Search and select a course..."
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      minHeight: '40px',
+                      borderColor: 'hsl(var(--input))',
+                      '&:hover': { borderColor: 'hsl(var(--input))' },
+                    }),
+                    menu: (base) => ({
+                      ...base,
+                      backgroundColor: 'hsl(var(--background))',
+                    }),
+                    option: (base, state) => ({
+                      ...base,
+                      backgroundColor: state.isFocused ? 'hsl(var(--accent))' : 'transparent',
+                      color: 'hsl(var(--foreground))',
+                    }),
+                  }}
+                />
               </div>
 
               <div className="grid grid-cols-3 gap-4">

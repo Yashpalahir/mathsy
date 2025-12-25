@@ -7,7 +7,7 @@ import Course from '../models/Course.js';
 export const getEnrollments = async (req, res) => {
   try {
     let query = {};
-    
+
     // If user is student, only show their enrollments
     if (req.user.role === 'student') {
       query.student = req.user.id;
@@ -148,3 +148,28 @@ export const updateEnrollment = async (req, res) => {
   }
 };
 
+// @desc    Check if user is enrolled in a course
+// @route   GET /api/enrollments/check/:courseId
+// @access  Private
+export const checkEnrollment = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+
+    const enrollment = await Enrollment.findOne({
+      student: req.user.id,
+      course: courseId,
+      status: 'active',
+    });
+
+    res.status(200).json({
+      success: true,
+      enrolled: !!enrollment,
+      enrollment: enrollment || null,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
