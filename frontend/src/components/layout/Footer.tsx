@@ -5,7 +5,7 @@ import mathsyLogo from "@/assets/mathsy-logo.png";
 export const Footer = () => {
   const socialLinks = [
     { Icon: Facebook, url: "https://facebook.com/mathsy", label: "Facebook" },
-    { Icon: Instagram, url: "https://instagram.com/mathsy", label: "Instagram" },
+    { Icon: Instagram, url: "https://www.instagram.com/mathsy.in/", label: "Instagram" },
     { Icon: Youtube, url: "https://youtube.com/mathsy", label: "YouTube" },
     { Icon: Twitter, url: "https://twitter.com/mathsy", label: "Twitter" },
   ];
