@@ -1,5 +1,29 @@
 import { Layout } from "@/components/layout/Layout";
 import { Trophy, Star, TrendingUp } from "lucide-react";
+import { motion, Variants } from "framer-motion";
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 100,
+      damping: 15
+    }
+  },
+};
 
 const toppers = [
   { name: "Priya Sharma", score: "98%", class: "Class 10 Board", year: "2024", image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop" },
@@ -20,16 +44,21 @@ const Results = () => {
   return (
     <Layout>
       {/* Hero */}
-      <section className="py-20 bg-hero-gradient">
+      <section className="py-20 bg-hero-gradient overflow-hidden">
         <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="max-w-3xl mx-auto text-center"
+          >
             <h1 className="font-display text-4xl md:text-5xl font-bold text-primary-foreground mb-6">
               Our <span className="text-secondary">Results</span>
             </h1>
             <p className="text-primary-foreground/80 text-lg">
               Celebrating the success of our students. See how Mathsy has helped thousands achieve their academic goals.
             </p>
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -62,10 +91,18 @@ const Results = () => {
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8"
+          >
             {toppers.map((topper, i) => (
-              <div
+              <motion.div
                 key={i}
+                variants={itemVariants}
+                whileHover={{ y: -5, transition: { duration: 0.2 } }}
                 className="bg-card rounded-2xl p-6 shadow-card hover:shadow-card-hover transition-all text-center group"
               >
                 <div className="relative inline-block mb-4">
@@ -83,9 +120,9 @@ const Results = () => {
                 <div className="inline-block bg-primary/10 text-primary font-bold text-2xl px-4 py-2 rounded-xl">
                   {topper.score}
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -98,13 +135,23 @@ const Results = () => {
             </h2>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            className="grid md:grid-cols-3 gap-8"
+          >
             {[
               { class: "Class 10", students: 200, above90: "75%", above80: "95%" },
               { class: "Class 12", students: 150, above90: "70%", above80: "92%" },
               { class: "JEE Foundation", students: 100, above90: "65%", above80: "88%" },
             ].map((batch, i) => (
-              <div key={i} className="bg-card rounded-2xl p-8 shadow-card">
+              <motion.div
+                key={i}
+                variants={itemVariants}
+                className="bg-card rounded-2xl p-8 shadow-card"
+              >
                 <h3 className="font-display font-bold text-xl text-foreground mb-6 text-center">{batch.class}</h3>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
@@ -120,9 +167,9 @@ const Results = () => {
                     <span className="font-bold text-primary">{batch.above80}</span>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
     </Layout>
