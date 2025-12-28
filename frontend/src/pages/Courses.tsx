@@ -370,11 +370,13 @@ const Courses = () => {
         <div className="container mx-auto px-4 text-center">
           <h2 className="font-display text-3xl font-bold text-foreground mb-4">Have Questions?</h2>
           <p className="text-muted-foreground mb-8">
-            Contact us for course details, batch timings, or book a free demo class.
+            Contact us for course details, batch timings, or <a href="https://wa.me/919375919696?text=hyy%20i%20am%20interested%20i%20mathsy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">book a free demo class</a>.
           </p>
-          <Button asChild variant="hero" size="lg">
-            <Link to="/contact">Contact Us</Link>
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button asChild variant="hero" size="lg">
+              <Link to="/contact">Contact Us</Link>
+            </Button>
+          </div>
         </div>
       </section>
     </Layout>
