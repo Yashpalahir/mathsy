@@ -4,6 +4,7 @@ import { Clock, Users, BookOpen, CheckCircle, Calendar, Loader2 } from "lucide-r
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { motion, Variants } from "framer-motion";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +16,29 @@ import {
 } from "@/components/ui/dialog";
 import { apiClient } from "@/lib/api";
 import { toast } from "sonner";
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 100,
+      damping: 15
+    }
+  },
+};
 
 interface Course {
   _id: string;
@@ -74,8 +98,11 @@ const Courses = () => {
         ? await apiClient.getCoursesForUser()
         : await apiClient.getCourses();
 
-      if (response.success && response.data) {
-        setCourses(response.data);
+      if (response.success) {
+        const data = (response as any).data || response;
+        if (Array.isArray(data)) {
+          setCourses(data);
+        }
       }
     } catch (error) {
       toast.error("Failed to load courses");
@@ -88,9 +115,12 @@ const Courses = () => {
   const fetchEnrollments = async () => {
     try {
       const response = await apiClient.getEnrollments();
-      if (response.success && response.data) {
-        const enrolledIds = new Set(response.data.map((e: any) => e.course._id || e.course));
-        setEnrolledCourseIds(enrolledIds);
+      if (response.success) {
+        const data = (response as any).data || response;
+        if (Array.isArray(data)) {
+          const enrolledIds = new Set<string>(data.map((e: any) => e.course._id || e.course));
+          setEnrolledCourseIds(enrolledIds);
+        }
       }
     } catch (error) {
       // Silently fail - enrollments are not critical for page load
@@ -195,16 +225,21 @@ const Courses = () => {
   return (
     <Layout>
       {/* Hero */}
-      <section className="py-20 bg-hero-gradient">
+      <section className="py-20 bg-hero-gradient overflow-hidden">
         <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="max-w-3xl mx-auto text-center"
+          >
             <h1 className="font-display text-4xl md:text-5xl font-bold text-primary-foreground mb-6">
               Our <span className="text-secondary">Courses</span>
             </h1>
             <p className="text-primary-foreground/80 text-lg">
               Structured curriculum designed for Class 8-12 students. Choose the course that fits your academic goals.
             </p>
-          </div>
+          </motion.div>
         </div>
       </section>
       {/* Payment Dialog */}
@@ -288,19 +323,31 @@ const Courses = () => {
               <p className="text-muted-foreground">No courses available at the moment.</p>
             </div>
           ) : (
-            <div className="space-y-8">
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="space-y-8"
+            >
               {courses.map((course) => (
-                <div
+                <motion.div
                   key={course._id}
+                  variants={itemVariants}
+                  whileHover={{ y: -5, transition: { duration: 0.2 } }}
                   className="bg-card rounded-2xl shadow-card hover:shadow-card-hover transition-all overflow-hidden"
                 >
                   <div className="grid lg:grid-cols-3">
                     {/* Header */}
                     <div className={`bg-gradient-to-br ${course.color || 'from-mathsy-blue to-primary'} p-8 text-primary-foreground relative`}>
                       {course.popular && (
-                        <span className="absolute top-4 right-4 bg-secondary text-secondary-foreground text-xs font-bold px-3 py-1 rounded-full">
+                        <motion.span
+                          initial={{ x: 20, opacity: 0 }}
+                          animate={{ x: 0, opacity: 1 }}
+                          transition={{ delay: 0.5 }}
+                          className="absolute top-4 right-4 bg-secondary text-secondary-foreground text-xs font-bold px-3 py-1 rounded-full"
+                        >
                           Most Popular
-                        </span>
+                        </motion.span>
                       )}
                       <h2 className="font-display text-2xl font-bold mb-4">{course.title}</h2>
                       <p className="text-primary-foreground/80 mb-6">{course.description}</p>
@@ -358,9 +405,9 @@ const Courses = () => {
                       </div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           )}
         </div>
       </section>

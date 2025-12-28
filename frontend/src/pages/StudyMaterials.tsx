@@ -14,6 +14,7 @@ import {
 import { useState, useEffect, useRef } from "react";
 import { apiClient } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { motion, Variants } from "framer-motion";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +24,30 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Document, Page, pdfjs } from "react-pdf";
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.9, y: 20 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 100,
+      damping: 15
+    }
+  },
+};
 
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -152,13 +177,19 @@ const StudyMaterials = () => {
   return (
     <Layout>
       {/* HERO */}
-      <section className="py-20 bg-hero-gradient text-center">
-        <h1 className="text-4xl font-bold text-primary-foreground">
-          Study <span className="text-secondary">Materials</span>
-        </h1>
-        <p className="text-primary-foreground/80 mt-4">
-          Notes, practice sheets & previous year questions
-        </p>
+      <section className="py-20 bg-hero-gradient text-center overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <h1 className="text-4xl font-bold text-primary-foreground">
+            Study <span className="text-secondary">Materials</span>
+          </h1>
+          <p className="text-primary-foreground/80 mt-4">
+            Notes, practice sheets & previous year questions
+          </p>
+        </motion.div>
       </section>
 
       {/* MATERIALS */}
@@ -179,10 +210,18 @@ const StudyMaterials = () => {
                     </h2>
                   </div>
 
-                  <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <motion.div
+                    variants={containerVariants}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, margin: "-100px" }}
+                    className="grid md:grid-cols-2 lg:grid-cols-4 gap-6"
+                  >
                     {items.map((item) => (
-                      <div
+                      <motion.div
                         key={item._id}
+                        variants={itemVariants}
+                        whileHover={{ y: -5, transition: { duration: 0.2 } }}
                         className="bg-card p-6 rounded-xl shadow"
                       >
                         <h3 className="font-semibold mb-2">
@@ -219,9 +258,9 @@ const StudyMaterials = () => {
                             Login to View
                           </Button>
                         )}
-                      </div>
+                      </motion.div>
                     ))}
-                  </div>
+                  </motion.div>
                 </div>
               );
             }

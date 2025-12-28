@@ -2,8 +2,33 @@ import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Video, Calendar, Clock, Users, ExternalLink, Play } from "lucide-react";
+import { Video, Calendar, Clock, Units, ExternalLink, Play } from "lucide-react";
 import { useState } from "react";
+import { motion, Variants } from "framer-motion";
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.9, y: 20 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 100,
+      damping: 15
+    }
+  },
+};
 
 const schedule = [
   { day: "Monday", class: "Class 10", topic: "Quadratic Equations", time: "6:00 PM - 7:30 PM", teacher: "Mr. Sharma" },
@@ -53,7 +78,8 @@ const LiveClasses = () => {
     }
 
     if (joinType === "meet") {
-      const code = raw.replace(/[^a-zA-Z0-9\-]/g, "");
+      // Fixed: Removed unnecessary escape for hyphen
+      const code = raw.replace(/[^a-zA-Z0-9-]/g, "");
       if (!code) {
         setJoinError("Invalid Meet code");
         return;
@@ -68,23 +94,33 @@ const LiveClasses = () => {
   return (
     <Layout>
       {/* Hero */}
-      <section className="py-20 bg-hero-gradient">
+      <section className="py-20 bg-hero-gradient overflow-hidden">
         <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="max-w-3xl mx-auto text-center"
+          >
             <h1 className="font-display text-4xl md:text-5xl font-bold text-primary-foreground mb-6">
               Live <span className="text-secondary">Classes</span>
             </h1>
             <p className="text-primary-foreground/80 text-lg">
               Join interactive live sessions via Zoom or Google Meet. Real-time doubt solving with expert teachers.
             </p>
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* Join Class Section */}
       <section className="py-16 bg-background">
         <div className="container mx-auto px-4">
-          <div className="bg-card rounded-2xl shadow-lg p-8 max-w-2xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            className="bg-card rounded-2xl shadow-lg p-8 max-w-2xl mx-auto text-center"
+          >
             <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
               <Video className="w-10 h-10 text-primary" />
             </div>
@@ -105,7 +141,7 @@ const LiveClasses = () => {
             <p className="text-sm text-muted-foreground mt-4">
               Note: You need to login to access class links
             </p>
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -149,7 +185,12 @@ const LiveClasses = () => {
             </p>
           </div>
 
-          <div className="bg-card rounded-2xl shadow-card overflow-hidden">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="bg-card rounded-2xl shadow-card overflow-hidden"
+          >
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -178,7 +219,7 @@ const LiveClasses = () => {
                 </tbody>
               </table>
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -194,9 +235,20 @@ const LiveClasses = () => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            className="grid md:grid-cols-3 gap-6"
+          >
             {[1, 2, 3].map((_, i) => (
-              <div key={i} className="bg-card rounded-2xl overflow-hidden shadow-card">
+              <motion.div
+                key={i}
+                variants={itemVariants}
+                whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                className="bg-card rounded-2xl overflow-hidden shadow-card"
+              >
                 <div className="aspect-video bg-muted relative group">
                   <div className="absolute inset-0 flex items-center justify-center bg-foreground/30">
                     <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
@@ -209,9 +261,9 @@ const LiveClasses = () => {
                   <h3 className="font-semibold text-foreground mt-1">Recording {i + 1}</h3>
                   <p className="text-sm text-muted-foreground">Login to watch</p>
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
 
           <div className="text-center mt-10">
             <Button variant="outline" size="lg">

@@ -4,12 +4,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  BookOpen, 
-  Video, 
-  FileText, 
-  Calendar, 
-  Clock, 
+import { motion, Variants } from "framer-motion";
+import {
+  BookOpen,
+  Video,
+  FileText,
+  Calendar,
+  Clock,
   Award,
   Bell,
   CreditCard,
@@ -60,6 +61,21 @@ const StudentDashboard = () => {
     { name: "Weekly Quiz", score: "42/50", date: "Nov 28" },
   ];
 
+  const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants: Variants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
+  };
+
   return (
     <Layout>
       <section className="py-12 bg-muted min-h-screen">
@@ -78,52 +94,65 @@ const StudentDashboard = () => {
           </div>
 
           {/* Quick Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <Card>
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <BookOpen className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">3</p>
-                  <p className="text-xs text-muted-foreground">Enrolled Courses</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="p-2 bg-green-500/10 rounded-lg">
-                  <Video className="w-5 h-5 text-green-500" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">24</p>
-                  <p className="text-xs text-muted-foreground">Classes Attended</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="p-2 bg-blue-500/10 rounded-lg">
-                  <FileText className="w-5 h-5 text-blue-500" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">12</p>
-                  <p className="text-xs text-muted-foreground">Tests Completed</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="p-2 bg-yellow-500/10 rounded-lg">
-                  <Award className="w-5 h-5 text-yellow-500" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">78%</p>
-                  <p className="text-xs text-muted-foreground">Avg Score</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
+          >
+            <motion.div variants={itemVariants}>
+              <Card>
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <BookOpen className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">3</p>
+                    <p className="text-xs text-muted-foreground">Enrolled Courses</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+            <motion.div variants={itemVariants}>
+              <Card>
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className="p-2 bg-green-500/10 rounded-lg">
+                    <Video className="w-5 h-5 text-green-500" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">24</p>
+                    <p className="text-xs text-muted-foreground">Classes Attended</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+            <motion.div variants={itemVariants}>
+              <Card>
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className="p-2 bg-blue-500/10 rounded-lg">
+                    <FileText className="w-5 h-5 text-blue-500" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">12</p>
+                    <p className="text-xs text-muted-foreground">Tests Completed</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+            <motion.div variants={itemVariants}>
+              <Card>
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className="p-2 bg-yellow-500/10 rounded-lg">
+                    <Award className="w-5 h-5 text-yellow-500" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">78%</p>
+                    <p className="text-xs text-muted-foreground">Avg Score</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </motion.div>
 
           <div className="grid md:grid-cols-3 gap-6">
             {/* Upcoming Classes */}
