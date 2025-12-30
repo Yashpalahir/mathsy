@@ -19,6 +19,7 @@ import AdminLogin from "./pages/AdminLogin";
 import CreateProfile from "./pages/CreateProfile";
 import GoogleAuthCallback from "./pages/GoogleAuthCallback";
 import CourseWatch from "./pages/CourseWatch";
+import EducatorWelcome from "./pages/EducatorWelcome";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="/create-profile" element={<CreateProfile />} />
             <Route path="/course/:id/watch" element={<CourseWatch />} />
             <Route path="/auth/success" element={<GoogleAuthCallback />} />
+            <Route path="/educator-welcome" element={<EducatorWelcome />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

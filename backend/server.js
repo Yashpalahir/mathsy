@@ -51,6 +51,7 @@ import testRoutes from './routes/testRoutes.js';
 import paymentRoutes from './routes/payments.js';
 import studyMaterialRoutes from './routes/studyMaterialRoutes.js';
 import courseVideoRoutes from './routes/courseVideoRoutes.js';
+import feeStatusRoutes from './routes/feeStatusRoutes.js';
 // ...existing code...
 
 app.use('/api/auth', authRoutes);
@@ -64,6 +65,7 @@ app.use('/api/tests', testRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/study-materials', studyMaterialRoutes);
 app.use('/api/course-videos', courseVideoRoutes);
+app.use('/api/fee-status', feeStatusRoutes);
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({

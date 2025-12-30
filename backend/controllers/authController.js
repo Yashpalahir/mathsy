@@ -1,5 +1,6 @@
 import User from '../models/User.js';
 import Otp from '../models/Otp.js';
+import Educator from '../models/Educator.js';
 import generateToken from '../utils/generateToken.js';
 import sendEmail from '../utils/sendEmail.js';
 import dotenv from 'dotenv';
@@ -148,21 +149,24 @@ export const login = async (req, res) => {
 // @access  Private
 export const getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id) || await Educator.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
 
-    console.log('👤 [GET ME] Fetching user data for:', user.email);
-    console.log('👤 [GET ME] isProfileComplete:', user.isProfileComplete);
+    console.log('👤 [GET ME] Fetching data for:', user.email);
+    console.log('👤 [GET ME] Role:', user.role);
 
     res.status(200).json({
       success: true,
       user: {
         id: user._id,
-        name: user.name,
+        name: user.name || 'Educator',
         email: user.email,
         role: user.role,
         phone: user.phone,
         avatar: user.avatar,
-        isProfileComplete: user.isProfileComplete, // 🔥 CRITICAL FIX: This was missing!
+        isProfileComplete: user.isProfileComplete || (user.role === 'educator'),
         username: user.username,
         studentClass: user.studentClass,
         address: user.address,
@@ -523,3 +527,101 @@ export const completeProfile = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// @desc    Add new educator
+// @route   POST /api/admin/add-educator
+// @access  Private (Admin only)
+export const addEducator = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide email and password',
+      });
+    }
+
+    const educatorExists = await Educator.findOne({ email });
+    if (educatorExists) {
+      return res.status(400).json({
+        success: false,
+        message: 'Educator already exists with this email',
+      });
+    }
+
+    console.log(`[ADMIN] Adding educator: ${email}`);
+    const educator = await Educator.create({
+      email,
+      password,
+    });
+    console.log(`[ADMIN] Educator created successfully: ${educator._id}`);
+
+    res.status(201).json({
+      success: true,
+      data: educator,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Educator login
+// @route   POST /api/auth/educator-login
+// @access  Public
+export const educatorLogin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide email and password',
+      });
+    }
+
+    console.log(`[AUTH] Educator login attempt: ${email}`);
+    const educator = await Educator.findOne({ email, role: 'educator' });
+    if (!educator) {
+      console.log(`[AUTH] Educator not found or role mismatch: ${email}`);
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials',
+      });
+    }
+
+    console.log(`[AUTH] Educator found, checking password...`);
+    const isMatch = await educator.matchPassword(password);
+    console.log(`[AUTH] Password match result: ${isMatch}`);
+
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials',
+      });
+    }
+
+    const token = generateToken(educator._id);
+    console.log(`[AUTH] Login successful, token generated for: ${email}`);
+    console.log(`[AUTH] Returning user data: role=${educator.role}, id=${educator._id}`);
+
+    res.status(200).json({
+      success: true,
+      token,
+      user: {
+        id: educator._id,
+        email: educator.email,
+        role: 'educator',
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+

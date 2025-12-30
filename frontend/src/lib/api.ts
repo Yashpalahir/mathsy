@@ -134,6 +134,20 @@ class ApiClient {
     });
   }
 
+  async educatorLogin(email: string, password: string) {
+    return this.request<{ token: string; user: any }>('/auth/educator-login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+  }
+
+  async addEducator(email: string, password: string) {
+    return this.request<{ success: boolean; data: any }>('/admin/add-educator', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+  }
+
   // Course endpoints
   async getCourses() {
     return this.request<{ data: any[] }>('/courses', {
@@ -282,6 +296,13 @@ class ApiClient {
     }
 
     return response;
+  }
+
+  // Fee Status endpoints
+  async getFeeStatus() {
+    return this.request<{ data: any[] }>('/fee-status/my', {
+      method: 'GET',
+    });
   }
 }
 

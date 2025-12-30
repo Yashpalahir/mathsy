@@ -1,5 +1,5 @@
 import express from 'express';
-import { register, login, getMe, sendOtp, loginWithOtp, completeProfile, verifyOtp, googleAuth } from '../controllers/authController.js';
+import { register, login, getMe, sendOtp, loginWithOtp, completeProfile, verifyOtp, googleAuth, educatorLogin } from '../controllers/authController.js';
 import { protect } from '../middleware/auth.js';
 import passport from 'passport';
 import generateToken from '../utils/generateToken.js';
@@ -8,10 +8,12 @@ const router = express.Router();
 
 router.post('/register', register);
 router.post('/login', login);
+router.post('/educator-login', educatorLogin);
 router.post('/send-otp', sendOtp);
 router.post('/verify-otp', verifyOtp);
 router.post('/login-otp', loginWithOtp);
 router.post('/google', googleAuth);
+
 
 // Log when the route is accessed (this runs before passport middleware)
 router.get('/google', (req, res, next) => {

@@ -82,6 +82,14 @@ const Admin = () => {
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
+  // Educator state
+  const [educatorFormData, setEducatorFormData] = useState({
+    email: "",
+    password: "",
+  });
+  const [isEducatorDialogOpen, setIsEducatorDialogOpen] = useState(false);
+
+
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || userType !== "admin")) {
       navigate("/admin-login");
@@ -291,6 +299,24 @@ const Admin = () => {
     setEditingMaterial(null);
     setIsMaterialDialogOpen(false);
   };
+
+  const handleEducatorSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (!educatorFormData.email || !educatorFormData.password) {
+        toast.error("Please provide both email and password");
+        return;
+      }
+
+      await (apiClient as any).addEducator(educatorFormData.email, educatorFormData.password);
+      toast.success("Educator added successfully");
+      setEducatorFormData({ email: "", password: "" });
+      setIsEducatorDialogOpen(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to add educator");
+    }
+  };
+
 
   if (authLoading) {
     return (
@@ -604,6 +630,75 @@ const Admin = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Educator Management Section */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Plus className="w-5 h-5" />
+              Educator Management
+            </CardTitle>
+            <CardDescription>Add new educators to the platform</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-between items-center">
+              <p className="text-sm text-muted-foreground">
+                Create credentials for new educators
+              </p>
+              <Dialog open={isEducatorDialogOpen} onOpenChange={setIsEducatorDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="hero">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Educator
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Add New Educator</DialogTitle>
+                    <DialogDescription>Set email and password for the new educator</DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleEducatorSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="educator-email">Gmail / Email</Label>
+                      <Input
+                        id="educator-email"
+                        type="email"
+                        value={educatorFormData.email}
+                        onChange={(e) => setEducatorFormData({ ...educatorFormData, email: e.target.value })}
+                        placeholder="educator@gmail.com"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="educator-password">Password</Label>
+                      <Input
+                        id="educator-password"
+                        type="password"
+                        value={educatorFormData.password}
+                        onChange={(e) => setEducatorFormData({ ...educatorFormData, password: e.target.value })}
+                        placeholder="••••••••"
+                        required
+                      />
+                    </div>
+                    <div className="flex justify-end gap-3 pt-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsEducatorDialogOpen(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button type="submit" variant="hero">
+                        Add Educator
+                      </Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </CardContent>
+        </Card>
+
 
         {/* Study Material Dialog */}
         <Dialog open={isMaterialDialogOpen} onOpenChange={setIsMaterialDialogOpen}>
