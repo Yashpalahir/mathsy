@@ -1,9 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { apiClient } from "@/lib/api";
 import { motion, Variants } from "framer-motion";
 import {
   BookOpen,
@@ -20,6 +21,8 @@ import {
 const StudentDashboard = () => {
   const { user, profile, userType, isAuthenticated, isLoading, logout } = useAuth();
   const navigate = useNavigate();
+  const [feeStatuses, setFeeStatuses] = useState<any[]>([]);
+  const [isFeesLoading, setIsFeesLoading] = useState(true);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -27,7 +30,25 @@ const StudentDashboard = () => {
     } else if (!isLoading && userType === "parent") {
       navigate("/parent-dashboard");
     }
+
+    if (isAuthenticated && userType === "student") {
+      fetchFeeStatus();
+    }
   }, [isAuthenticated, isLoading, userType, navigate]);
+
+  const fetchFeeStatus = async () => {
+    try {
+      setIsFeesLoading(true);
+      const response = await apiClient.getFeeStatus();
+      if (response.success) {
+        setFeeStatuses(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching fee status:", error);
+    } finally {
+      setIsFeesLoading(false);
+    }
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -212,17 +233,46 @@ const StudentDashboard = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">December</span>
-                      <span className="text-green-500 font-medium">Paid</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">January</span>
-                      <span className="text-yellow-500 font-medium">Pending</span>
-                    </div>
+                  <div className="space-y-4">
+                    {isFeesLoading ? (
+                      <div className="flex justify-center p-4">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      </div>
+                    ) : feeStatuses.length > 0 ? (
+                      feeStatuses.map((fee, index) => (
+                        <div key={fee._id || index} className="space-y-2 pb-2 border-b last:border-0">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <p className="text-sm font-medium">{fee.month} {fee.year}</p>
+                              <p className="text-xs text-muted-foreground">{fee.course?.title}</p>
+                            </div>
+                            <span
+                              className={`text-xs font-bold px-2 py-1 rounded-full uppercase ${fee.status === 'paid'
+                                  ? 'bg-green-500/10 text-green-600'
+                                  : fee.status === 'pending'
+                                    ? 'bg-yellow-500/10 text-yellow-600'
+                                    : 'bg-red-500/10 text-red-600'
+                                }`}
+                            >
+                              {fee.status}
+                            </span>
+                          </div>
+                          {fee.status !== 'paid' && (
+                            <Button
+                              variant="hero"
+                              size="sm"
+                              className="w-full h-8 text-xs"
+                              onClick={() => navigate(`/checkout/${fee.course?._id}?feeId=${fee._id}`)}
+                            >
+                              Pay Now (₹{fee.amount})
+                            </Button>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center">No fee records found</p>
+                    )}
                   </div>
-                  <Button variant="hero" size="sm" className="w-full mt-4">Pay Now</Button>
                 </CardContent>
               </Card>
 
