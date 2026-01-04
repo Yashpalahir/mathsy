@@ -304,6 +304,21 @@ class ApiClient {
       method: 'GET',
     });
   }
+
+  // Attendance endpoints
+  async generateAttendanceToken(type: 'IN' | 'OUT') {
+    return this.request<{ data: { token: string; expiresAt: string; type: string } }>('/attendance/generate', {
+      method: 'POST',
+      body: JSON.stringify({ type }),
+    });
+  }
+
+  async scanAttendanceQR(token: string) {
+    return this.request<any>('/attendance/scan', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);

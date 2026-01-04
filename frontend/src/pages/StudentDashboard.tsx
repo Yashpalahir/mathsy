@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api";
 import { motion, Variants } from "framer-motion";
+import { QRCodeSVG } from "qrcode.react";
+import { toast } from "sonner";
 import {
   BookOpen,
   Video,
@@ -15,7 +17,9 @@ import {
   Award,
   Bell,
   CreditCard,
-  Loader2
+  Loader2,
+  QrCode,
+  RefreshCw
 } from "lucide-react";
 
 const StudentDashboard = () => {
@@ -23,6 +27,12 @@ const StudentDashboard = () => {
   const navigate = useNavigate();
   const [feeStatuses, setFeeStatuses] = useState<any[]>([]);
   const [isFeesLoading, setIsFeesLoading] = useState(true);
+
+  // Attendance states
+  const [attendanceToken, setAttendanceToken] = useState<{ token: string; expiresAt: string; type: string } | null>(null);
+  const [isGeneratingToken, setIsGeneratingToken] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -34,6 +44,10 @@ const StudentDashboard = () => {
     if (isAuthenticated && userType === "student") {
       fetchFeeStatus();
     }
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
   }, [isAuthenticated, isLoading, userType, navigate]);
 
   const fetchFeeStatus = async () => {
@@ -47,6 +61,38 @@ const StudentDashboard = () => {
       console.error("Error fetching fee status:", error);
     } finally {
       setIsFeesLoading(false);
+    }
+  };
+
+  const generateToken = async (type: 'IN' | 'OUT') => {
+    try {
+      setIsGeneratingToken(true);
+      const response = await apiClient.generateAttendanceToken(type);
+      if (response.success) {
+        setAttendanceToken(response.data);
+        const expiresAt = new Date(response.data.expiresAt).getTime();
+        const now = Date.now();
+        setTimeLeft(Math.max(0, Math.floor((expiresAt - now) / 1000)));
+
+        if (timerRef.current) clearInterval(timerRef.current);
+        timerRef.current = setInterval(() => {
+          const currentNow = Date.now();
+          const remaining = Math.max(0, Math.floor((expiresAt - currentNow) / 1000));
+          setTimeLeft(remaining);
+          if (remaining <= 0) {
+            if (timerRef.current) clearInterval(timerRef.current);
+            // Auto-refresh token if it expires while being viewed
+            generateToken(type);
+          }
+        }, 1000);
+
+        toast.success(`Generated ${type} QR Code`);
+      }
+    } catch (error) {
+      toast.error("Failed to generate QR code");
+      console.error(error);
+    } finally {
+      setIsGeneratingToken(false);
     }
   };
 
@@ -176,30 +222,109 @@ const StudentDashboard = () => {
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-6">
-            {/* Upcoming Classes */}
-            <Card className="md:col-span-2">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5" />
-                  Upcoming Classes
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {upcomingClasses.map((cls, i) => (
-                  <div key={i} className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                    <div>
-                      <p className="font-medium">{cls.subject}</p>
-                      <p className="text-sm text-muted-foreground">{cls.date}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm">{cls.time}</span>
-                    </div>
+            <div className="md:col-span-2 space-y-6">
+              {/* Attendance Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <QrCode className="w-5 h-5" />
+                    Attendance QR
+                  </CardTitle>
+                  <CardDescription>
+                    Generate a QR code to mark your attendance. Valid for 60 seconds.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col items-center justify-center p-6 bg-muted rounded-xl space-y-6">
+                    {attendanceToken ? (
+                      <div className="flex flex-col items-center space-y-4">
+                        <div className="p-4 bg-white rounded-2xl shadow-sm border">
+                          <QRCodeSVG
+                            value={attendanceToken.token}
+                            size={200}
+                            level="H"
+                            includeMargin={true}
+                          />
+                        </div>
+                        <div className="text-center">
+                          <p className="font-bold text-lg text-primary">
+                            {attendanceToken.type} TOKEN
+                          </p>
+                          <p className="text-sm text-muted-foreground flex items-center justify-center gap-2">
+                            <Clock className="w-4 h-4" />
+                            Expires in {timeLeft}s
+                          </p>
+                        </div>
+                        <div className="flex gap-4">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setAttendanceToken(null)}
+                          >
+                            Close
+                          </Button>
+                          <Button
+                            variant="hero"
+                            size="sm"
+                            onClick={() => generateToken(attendanceToken.type as 'IN' | 'OUT')}
+                            disabled={isGeneratingToken}
+                          >
+                            <RefreshCw className={`w-4 h-4 mr-2 ${isGeneratingToken ? 'animate-spin' : ''}`} />
+                            Refresh
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-4 w-full max-w-sm">
+                        <Button
+                          variant="hero"
+                          className="h-24 flex flex-col gap-2"
+                          onClick={() => generateToken('IN')}
+                          disabled={isGeneratingToken}
+                        >
+                          <span className="text-2xl font-bold text-white">IN</span>
+                          <span className="text-xs opacity-90">Mark Entry</span>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="h-24 flex flex-col gap-2 border-2 border-primary"
+                          onClick={() => generateToken('OUT')}
+                          disabled={isGeneratingToken}
+                        >
+                          <span className="text-2xl font-bold text-primary">OUT</span>
+                          <span className="text-xs text-muted-foreground">Mark Exit</span>
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                ))}
-                <Button variant="outline" className="w-full">View Full Schedule</Button>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+
+              {/* Upcoming Classes */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="w-5 h-5" />
+                    Upcoming Classes
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {upcomingClasses.map((cls, i) => (
+                    <div key={i} className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                      <div>
+                        <p className="font-medium">{cls.subject}</p>
+                        <p className="text-sm text-muted-foreground">{cls.date}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm">{cls.time}</span>
+                      </div>
+                    </div>
+                  ))}
+                  <Button variant="outline" className="w-full">View Full Schedule</Button>
+                </CardContent>
+              </Card>
+            </div>
 
             {/* Sidebar */}
             <div className="space-y-6">
