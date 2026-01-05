@@ -27,6 +27,9 @@ const StudentDashboard = () => {
   const navigate = useNavigate();
   const [feeStatuses, setFeeStatuses] = useState<any[]>([]);
   const [isFeesLoading, setIsFeesLoading] = useState(true);
+  const [stats, setStats] = useState<any>(null);
+  const [recentTests, setRecentTests] = useState<any[]>([]);
+  const [isStatsLoading, setIsStatsLoading] = useState(true);
 
   // Attendance states
   const [attendanceToken, setAttendanceToken] = useState<{ token: string; expiresAt: string; type: string } | null>(null);
@@ -43,6 +46,7 @@ const StudentDashboard = () => {
 
     if (isAuthenticated && userType === "student") {
       fetchFeeStatus();
+      fetchDashboardStats();
     }
 
     return () => {
@@ -61,6 +65,21 @@ const StudentDashboard = () => {
       console.error("Error fetching fee status:", error);
     } finally {
       setIsFeesLoading(false);
+    }
+  };
+
+  const fetchDashboardStats = async () => {
+    try {
+      setIsStatsLoading(true);
+      const response = await apiClient.getStudentStats();
+      if (response.success) {
+        setStats(response.data.stats);
+        setRecentTests(response.data.recentTests);
+      }
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+    } finally {
+      setIsStatsLoading(false);
     }
   };
 
@@ -123,11 +142,6 @@ const StudentDashboard = () => {
     { subject: "JEE Basics - Calculus", time: "4:00 PM", date: "Dec 7" },
   ];
 
-  const recentTests = [
-    { name: "Chapter 5 Test", score: "85/100", date: "Dec 1" },
-    { name: "Weekly Quiz", score: "42/50", date: "Nov 28" },
-  ];
-
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
@@ -174,7 +188,7 @@ const StudentDashboard = () => {
                     <BookOpen className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">3</p>
+                    <p className="text-2xl font-bold">{isStatsLoading ? "..." : stats?.enrolledCourses || 0}</p>
                     <p className="text-xs text-muted-foreground">Enrolled Courses</p>
                   </div>
                 </CardContent>
@@ -187,7 +201,7 @@ const StudentDashboard = () => {
                     <Video className="w-5 h-5 text-green-500" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">24</p>
+                    <p className="text-2xl font-bold">{isStatsLoading ? "..." : stats?.classesAttended || 0}</p>
                     <p className="text-xs text-muted-foreground">Classes Attended</p>
                   </div>
                 </CardContent>
@@ -200,7 +214,7 @@ const StudentDashboard = () => {
                     <FileText className="w-5 h-5 text-blue-500" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">12</p>
+                    <p className="text-2xl font-bold">{isStatsLoading ? "..." : stats?.testsCompleted || 0}</p>
                     <p className="text-xs text-muted-foreground">Tests Completed</p>
                   </div>
                 </CardContent>
@@ -213,7 +227,7 @@ const StudentDashboard = () => {
                     <Award className="w-5 h-5 text-yellow-500" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">78%</p>
+                    <p className="text-2xl font-bold">{isStatsLoading ? "..." : `${stats?.avgScore || 0}%`}</p>
                     <p className="text-xs text-muted-foreground">Avg Score</p>
                   </div>
                 </CardContent>
@@ -337,15 +351,25 @@ const StudentDashboard = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {recentTests.map((test, i) => (
-                    <div key={i} className="flex justify-between items-center">
-                      <div>
-                        <p className="font-medium text-sm">{test.name}</p>
-                        <p className="text-xs text-muted-foreground">{test.date}</p>
-                      </div>
-                      <span className="text-sm font-semibold text-primary">{test.score}</span>
+                  {isStatsLoading ? (
+                    <div className="flex justify-center p-4">
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     </div>
-                  ))}
+                  ) : recentTests.length > 0 ? (
+                    recentTests.map((test, i) => (
+                      <div key={i} className="flex justify-between items-center">
+                        <div>
+                          <p className="font-medium text-sm">{test.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(test.date).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <span className="text-sm font-semibold text-primary">{test.score}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center">No tests completed yet</p>
+                  )}
                 </CardContent>
               </Card>
 
