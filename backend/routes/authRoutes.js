@@ -1,10 +1,42 @@
 import express from 'express';
-import { register, login, getMe, sendOtp, loginWithOtp, completeProfile, verifyOtp, googleAuth, educatorLogin } from '../controllers/authController.js';
+import { register, login, getMe, sendOtp, loginWithOtp, completeProfile, verifyOtp, googleAuth, educatorLogin, sendWhatsAppOtp, verifyWhatsAppOtp } from '../controllers/authController.js';
 import { protect } from '../middleware/auth.js';
 import passport from 'passport';
 import generateToken from '../utils/generateToken.js';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 
 const router = express.Router();
+
+// Multer Config
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadDir = 'uploads/';
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir);
+        }
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        cb(null, `${Date.now()}-${file.originalname}`);
+    }
+});
+
+const upload = multer({
+    storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: (req, file, cb) => {
+        const filetypes = /jpeg|jpg|png|webp/;
+        const mimetype = filetypes.test(file.mimetype);
+        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+
+        if (mimetype && extname) {
+            return cb(null, true);
+        }
+        cb(new Error('Only images are allowed (jpeg, jpg, png, webp)'));
+    }
+});
 
 router.post('/register', register);
 router.post('/login', login);
@@ -45,7 +77,9 @@ router.get(
         res.redirect(redirectUrl);
     }
 );
-router.put('/complete-profile', protect, completeProfile);
+router.put('/complete-profile', protect, upload.single('avatar'), completeProfile);
+router.post('/send-whatsapp-otp', protect, sendWhatsAppOtp);
+router.post('/verify-whatsapp-otp', protect, verifyWhatsAppOtp);
 router.get('/me', protect, getMe);
 
 export default router;

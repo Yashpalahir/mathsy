@@ -114,10 +114,24 @@ class ApiClient {
     });
   }
 
-  async completeProfile(data: any) {
+  async completeProfile(data: FormData | any) {
     return this.request<any>('/auth/complete-profile', {
       method: 'PUT',
-      body: JSON.stringify(data),
+      body: data instanceof FormData ? data : JSON.stringify(data),
+    });
+  }
+
+  async sendWhatsAppOtp(phone: string) {
+    return this.request<any>('/auth/send-whatsapp-otp', {
+      method: 'POST',
+      body: JSON.stringify({ phone }),
+    });
+  }
+
+  async verifyWhatsAppOtp(otp: string) {
+    return this.request<any>('/auth/verify-whatsapp-otp', {
+      method: 'POST',
+      body: JSON.stringify({ otp }),
     });
   }
 
@@ -301,6 +315,13 @@ class ApiClient {
   // Fee Status endpoints
   async getFeeStatus() {
     return this.request<{ data: any[] }>('/fee-status/my', {
+      method: 'GET',
+    });
+  }
+
+  // Dashboard endpoints
+  async getStudentStats() {
+    return this.request<{ data: { stats: any; recentTests: any[] } }>('/dashboard/student-stats', {
       method: 'GET',
     });
   }

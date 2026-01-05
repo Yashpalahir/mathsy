@@ -4,8 +4,13 @@ import Educator from '../models/Educator.js';
 import generateToken from '../utils/generateToken.js';
 import sendEmail from '../utils/sendEmail.js';
 import dotenv from 'dotenv';
+import twilio from 'twilio';
 
 dotenv.config();
+
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+const twilioClient = twilio(accountSid, authToken);
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@mathsy.com';
 const ADMIN_NAME = process.env.ADMIN_NAME || 'Admin';
@@ -492,7 +497,7 @@ export const completeProfile = async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    const { username, studentClass, address, avatar } = req.body;
+    const { username, studentClass, address, phone } = req.body;
 
     // Basic validation
     if (!username || !studentClass || !address) {
@@ -503,7 +508,13 @@ export const completeProfile = async (req, res) => {
     user.username = username;
     user.studentClass = studentClass;
     user.address = address;
-    if (avatar) user.avatar = avatar;
+    if (phone) user.phone = phone;
+
+    // Handle avatar upload if present
+    if (req.file) {
+      user.avatar = `/uploads/${req.file.filename}`;
+    }
+
     user.isProfileComplete = true;
 
     await user.save();
@@ -520,7 +531,102 @@ export const completeProfile = async (req, res) => {
         studentClass: user.studentClass,
         address: user.address,
         avatar: user.avatar,
+        phone: user.phone,
+        isPhoneVerified: user.isPhoneVerified
       },
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Send OTP to WhatsApp (Simulated)
+// @route   POST /api/auth/send-whatsapp-otp
+// @access  Private
+export const sendWhatsAppOtp = async (req, res) => {
+  try {
+    const { phone } = req.body;
+    if (!phone) {
+      return res.status(400).json({ success: false, message: 'Please provide a phone number' });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Generate 6 digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Store OTP in User model
+    user.otp = otp;
+    user.otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    user.phone = phone;
+    await user.save();
+
+    // Send Real WhatsApp Message using Twilio
+    try {
+      // Format phone number for Twilio WhatsApp
+      let formattedPhone = phone.trim();
+      if (!formattedPhone.startsWith('whatsapp:')) {
+        if (!formattedPhone.startsWith('+')) {
+          formattedPhone = `+91${formattedPhone}`; // Default to India if no country code
+        }
+        formattedPhone = `whatsapp:${formattedPhone}`;
+      }
+
+      await twilioClient.messages.create({
+        from: process.env.TWILIO_WHATSAPP_FROM || 'whatsapp:+14155238886',
+        contentSid: process.env.TWILIO_CONTENT_SID || 'HX229f5a04fd0510ce1b071852155d3e75',
+        contentVariables: JSON.stringify({ "1": otp }),
+        to: formattedPhone
+      });
+
+      console.log(`✅ [WHATSAPP OTP] Sent to ${formattedPhone}`);
+    } catch (twilioError) {
+      console.error('❌ [TWILIO ERROR]', twilioError.message);
+      // We don't return error to user here as the OTP is already saved, 
+      // but in production you might want to handle this better.
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `OTP sent to WhatsApp: ${phone}`,
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Verify WhatsApp OTP
+// @route   POST /api/auth/verify-whatsapp-otp
+// @access  Private
+export const verifyWhatsAppOtp = async (req, res) => {
+  try {
+    const { otp } = req.body;
+    if (!otp) {
+      return res.status(400).json({ success: false, message: 'Please provide the OTP' });
+    }
+
+    const user = await User.findById(req.user.id).select('+otp +otpExpires');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (user.otp !== otp || user.otpExpires < Date.now()) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
+    }
+
+    user.isPhoneVerified = true;
+    user.otp = undefined;
+    user.otpExpires = undefined;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Phone number verified successfully',
     });
 
   } catch (error) {
