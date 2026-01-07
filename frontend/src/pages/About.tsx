@@ -1,7 +1,31 @@
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Award, Users, BookOpen, Target, CheckCircle, GraduationCap } from "lucide-react";
+import { Award, Users, BookOpen, Target, GraduationCap } from "lucide-react";
+import { motion, Variants } from "framer-motion";
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 100,
+      damping: 15
+    }
+  },
+};
 
 const achievements = [
   { number: "10+", label: "Years Experience" },
@@ -27,16 +51,21 @@ const About = () => {
   return (
     <Layout>
       {/* Hero */}
-      <section className="py-20 bg-hero-gradient">
+      <section className="py-20 bg-hero-gradient overflow-hidden">
         <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="max-w-3xl mx-auto text-center"
+          >
             <h1 className="font-display text-4xl md:text-5xl font-bold text-primary-foreground mb-6">
               About <span className="text-secondary">Mathsy</span>
             </h1>
             <p className="text-primary-foreground/80 text-lg">
               Empowering students to master mathematics through expert guidance, interactive learning, and proven teaching methodologies.
             </p>
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -60,7 +89,12 @@ const About = () => {
       <section className="py-20 bg-background">
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div>
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+            >
               <span className="inline-block bg-primary/10 text-primary font-semibold px-4 py-2 rounded-full text-sm mb-4">
                 Our Story
               </span>
@@ -78,8 +112,14 @@ const About = () => {
                   Today, we're proud to have helped thousands of students not just pass their exams, but truly understand and enjoy mathematics.
                 </p>
               </div>
-            </div>
-            <div className="bg-muted rounded-2xl p-8 space-y-6">
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+              className="bg-muted rounded-2xl p-8 space-y-6"
+            >
               {values.map((value, i) => (
                 <div key={i} className="flex gap-4">
                   <div className="w-14 h-14 bg-primary rounded-xl flex items-center justify-center shrink-0">
@@ -91,7 +131,7 @@ const About = () => {
                   </div>
                 </div>
               ))}
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -104,27 +144,43 @@ const About = () => {
               Our Teaching <span className="text-primary">Approach</span>
             </h2>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            className="grid md:grid-cols-3 gap-8"
+          >
             {[
               { icon: BookOpen, title: "Concept First", desc: "Focus on understanding fundamentals before problem-solving" },
               { icon: Users, title: "Interactive Learning", desc: "Live classes with real-time doubt clearing sessions" },
               { icon: Award, title: "Regular Assessment", desc: "Weekly tests and quizzes to track progress" },
             ].map((item, i) => (
-              <div key={i} className="bg-card rounded-2xl p-8 text-center shadow-card">
+              <motion.div
+                key={i}
+                variants={itemVariants}
+                whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                className="bg-card rounded-2xl p-8 text-center shadow-card"
+              >
                 <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                   <item.icon className="w-8 h-8 text-primary" />
                 </div>
                 <h3 className="font-display font-bold text-xl text-foreground mb-3">{item.title}</h3>
                 <p className="text-muted-foreground">{item.desc}</p>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* CTA */}
       <section className="py-20 bg-background">
-        <div className="container mx-auto px-4 text-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          className="container mx-auto px-4 text-center"
+        >
           <h2 className="font-display text-3xl font-bold text-foreground mb-4">
             Ready to Start Your Journey?
           </h2>
@@ -134,7 +190,7 @@ const About = () => {
           <Button asChild variant="hero" size="lg">
             <Link to="/courses">Explore Courses</Link>
           </Button>
-        </div>
+        </motion.div>
       </section>
     </Layout>
   );

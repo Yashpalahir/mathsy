@@ -1,4 +1,5 @@
 import { Play, Clock, Eye } from "lucide-react";
+import { motion, Variants } from "framer-motion";
 
 const demoVideos = [
   {
@@ -27,11 +28,41 @@ const demoVideos = [
   },
 ];
 
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.2,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.9, y: 20 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 100,
+      damping: 15
+    }
+  },
+};
+
 export const DemoVideos = () => {
   return (
-    <section className="py-20 bg-background">
+    <section className="py-20 bg-background overflow-hidden">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-16"
+        >
           <span className="inline-block bg-mathsy-pink/20 text-mathsy-pink font-semibold px-4 py-2 rounded-full text-sm mb-4">
             Free Demo
           </span>
@@ -41,12 +72,20 @@ export const DemoVideos = () => {
           <p className="text-muted-foreground max-w-2xl mx-auto">
             Experience our teaching style before enrolling. Watch these free demo classes.
           </p>
-        </div>
+        </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          className="grid md:grid-cols-3 gap-8"
+        >
           {demoVideos.map((video) => (
-            <div
+            <motion.div
               key={video.id}
+              variants={itemVariants}
+              whileHover={{ y: -5, transition: { duration: 0.2 } }}
               className="group bg-card rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300"
             >
               <div className="relative aspect-video">
@@ -64,7 +103,7 @@ export const DemoVideos = () => {
                   {video.class}
                 </span>
               </div>
-              
+
               <div className="p-5">
                 <h3 className="font-display font-bold text-lg text-foreground mb-3 group-hover:text-primary transition-colors">
                   {video.title}
@@ -80,9 +119,9 @@ export const DemoVideos = () => {
                   </span>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );

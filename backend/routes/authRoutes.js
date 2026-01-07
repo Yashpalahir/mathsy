@@ -1,17 +1,27 @@
 import express from 'express';
-import { register, login, getMe, sendOtp, loginWithOtp, completeProfile, verifyOtp, googleAuth } from '../controllers/authController.js';
+import { register, login, getMe, sendOtp, loginWithOtp, completeProfile, verifyOtp, googleAuth, educatorLogin, sendWhatsAppOtp, verifyWhatsAppOtp } from '../controllers/authController.js';
 import { protect } from '../middleware/auth.js';
 import passport from 'passport';
 import generateToken from '../utils/generateToken.js';
+import multer from 'multer';
+import { storage } from '../utils/cloudinary.js';
 
 const router = express.Router();
 
+// Multer Config with Cloudinary Storage
+const upload = multer({
+    storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+});
+
 router.post('/register', register);
 router.post('/login', login);
+router.post('/educator-login', educatorLogin);
 router.post('/send-otp', sendOtp);
 router.post('/verify-otp', verifyOtp);
 router.post('/login-otp', loginWithOtp);
 router.post('/google', googleAuth);
+
 
 // Log when the route is accessed (this runs before passport middleware)
 router.get('/google', (req, res, next) => {
@@ -43,7 +53,9 @@ router.get(
         res.redirect(redirectUrl);
     }
 );
-router.put('/complete-profile', protect, completeProfile);
+router.put('/complete-profile', protect, upload.single('avatar'), completeProfile);
+router.post('/send-whatsapp-otp', protect, sendWhatsAppOtp);
+router.post('/verify-whatsapp-otp', protect, verifyWhatsAppOtp);
 router.get('/me', protect, getMe);
 
 export default router;

@@ -18,14 +18,26 @@ const nameSchema = z.string().min(2, "Name must be at least 2 characters");
 /* ---------------- COMPONENT ---------------- */
 
 const Login = () => {
-  const { login, signup, sendOtp, verifyOtp, loginWithOtp, loginWithGoogle, isAuthenticated, userType: currentUserType, isLoading: authLoading, user } = useAuth();
+  const {
+    login,
+    signup,
+    sendOtp,
+    verifyOtp,
+    loginWithOtp,
+    loginWithGoogle,
+    educatorLogin,
+    isAuthenticated,
+    userType: currentUserType,
+    isLoading: authLoading,
+    user
+  } = useAuth();
   const navigate = useNavigate();
 
   // Mode: login or signup
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
 
-  // Login Method: password or otp
-  const [loginMethod, setLoginMethod] = useState<"password" | "otp">("password");
+  // Login Method: password or otp or educator
+  const [loginMethod, setLoginMethod] = useState<"password" | "otp" | "educator">("password");
 
   // Signup Steps: 1=Email, 2=OTP, 2.5=Class Selection, 3=Details
   const [signupStep, setSignupStep] = useState(1);
@@ -54,12 +66,17 @@ const Login = () => {
 
   // Redirect logic
   if (isAuthenticated && user) {
+    if ((user.role as any) === "educator") {
+      return <Navigate to="/educator-welcome" replace />;
+    }
     if (!user.isProfileComplete) {
-      // Allow staying on create-profile, but here we are on login page, so redirect to create-profile
       return <Navigate to="/create-profile" replace />;
     }
     if (user.role === "admin") {
       return <Navigate to="/admin" replace />;
+    }
+    if (user.role === "educator") {
+      return <Navigate to="/educator-welcome" replace />;
     }
     return <Navigate to="/student-dashboard" replace />;
   }
@@ -114,6 +131,16 @@ const Login = () => {
         const { error } = await login(email, password);
         if (error) toast.error(error);
         else toast.success("Welcome back!");
+      } else if (loginMethod === "educator") {
+        console.log(`[FRONTEND] Submitting educator login for: ${email}`);
+        const { error } = await educatorLogin(email, password);
+        if (error) {
+          console.error(`[FRONTEND] Educator login error: ${error}`);
+          toast.error(error);
+        } else {
+          console.log(`[FRONTEND] Educator login successful!`);
+          toast.success("Welcome Educator!");
+        }
       } else {
         // OTP Login
         if (!otpSent) {
@@ -250,11 +277,13 @@ const Login = () => {
             {/* FORMS */}
             <form onSubmit={authMode === "login" ? handleLoginSubmit : handleSignupSubmit} className="space-y-4">
 
-              {/* LOGIN: PASSWORD MODE */}
-              {authMode === "login" && loginMethod === "password" && (
+              {/* LOGIN: PASSWORD OR EDUCATOR MODE */}
+              {authMode === "login" && (loginMethod === "password" || loginMethod === "educator") && (
                 <>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Email Address</label>
+                    <label className="text-sm font-medium">
+                      {loginMethod === "educator" ? "Educator Email" : "Email Address"}
+                    </label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -279,7 +308,7 @@ const Login = () => {
                     </div>
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading} variant="hero">
-                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Login"}
+                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : loginMethod === "educator" ? "Login as Educator" : "Login"}
                   </Button>
                 </>
               )}
@@ -467,6 +496,26 @@ const Login = () => {
                     Log in
                   </button>
                 </p>
+              )}
+
+              {/* educator LOGIN OPTION (Only for Login Mode) */}
+              {authMode === "login" && (
+                <div className="mt-4 pt-4 border-t border-border">
+                  <button
+                    onClick={() => {
+                      if (loginMethod === "educator") {
+                        setLoginMethod("password");
+                      } else {
+                        setLoginMethod("educator");
+                      }
+                      setEmail("");
+                      setPassword("");
+                    }}
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    {loginMethod === "educator" ? "Back to Student Login" : "Login as Educator"}
+                  </button>
+                </div>
               )}
             </div>
 
