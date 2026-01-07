@@ -88,7 +88,7 @@ const Login = () => {
     setIsLoading(true);
 
     // Get backend URL from environment variable
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || '';
     const backendUrl = apiUrl.replace('/api', ''); // Remove /api suffix to get base URL
 
     const oauthUrl = `${backendUrl}/api/auth/google`;
