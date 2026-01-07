@@ -3,9 +3,12 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import connectDB from './config/db.js';
+import serverless from 'serverless-http';
+import passport from 'passport';
 
-// Load env vars
+import connectDB from './config/db.js';
+import './config/passport.js';
+
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -13,27 +16,19 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Connect to database (non-blocking)
-connectDB();
+/* ---------------------------------
+   🔥 Lambda-Optimized Mongo Connect
+----------------------------------- */
+app.use(async (req, res, next) => {
+  await connectDB(); // reuses connection in Lambda
+  next();
+});
 
-// CORS configuration - allow requests from frontend
-// In development, allow all origins for easier testing
-// const corsOptions = process.env.NODE_ENV === 'production' 
-//   ? {
-//       origin: process.env.FRONTEND_URL || 'http://localhost:8080',
-//       credentials: true,
-//     }
-//   : {
-//       origin: true, // Allow all origins in development
-//       credentials: true,
-//     };
-
-import passport from 'passport';
-import './config/passport.js'; // Import config
-
+/* ------------ CORS ------------- */
 app.use(cors());
 app.use(passport.initialize());
-// Avoid parsing multipart/form-data with JSON parser (prevents 'Unexpected token -' errors)
+
+/* Avoid JSON parsing for multipart requests */
 app.use((req, res, next) => {
   const contentType = (req.headers['content-type'] || '').toLowerCase();
   if (contentType.includes('multipart/form-data')) {
@@ -44,10 +39,19 @@ app.use((req, res, next) => {
 
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Static folder for uploads
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+/* ---------------------------------
+   ❌ REMOVED LOCAL UPLOADS STATIC FOLDER
+   Because Cloudinary is used
+----------------------------------- */
 
-// Routes
+/* 
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+REMOVED 🚫
+*/
+
+/* ---------------------------------
+   📦 All Routes
+----------------------------------- */
 import authRoutes from './routes/authRoutes.js';
 import courseRoutes from './routes/courseRoutes.js';
 import enrollmentRoutes from './routes/enrollmentRoutes.js';
@@ -62,7 +66,6 @@ import courseVideoRoutes from './routes/courseVideoRoutes.js';
 import feeStatusRoutes from './routes/feeStatusRoutes.js';
 import attendanceRoutes from './routes/attendanceRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
-// ...existing code...
 
 app.use('/api/auth', authRoutes);
 app.use('/api/courses', courseRoutes);
@@ -78,15 +81,18 @@ app.use('/api/course-videos', courseVideoRoutes);
 app.use('/api/fee-status', feeStatusRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/dashboard', dashboardRoutes);
-// Health check
+
+/* ------------ Health Check ------------ */
 app.get('/api/health', (req, res) => {
   res.json({
     success: true,
-    message: 'Mathsy API is running',
+    message: 'Mathsy API running on AWS Lambda',
+    lambda: true,
     timestamp: new Date().toISOString(),
   });
 });
-// 404 handler
+
+/* ----------- 404 Handler ----------- */
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -94,44 +100,21 @@ app.use((req, res) => {
   });
 });
 
-// Error handler
+/* ----------- Error Handler ----------- */
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error("❌ Server Error:", err.stack);
   res.status(500).json({
     success: false,
     message: err.message || 'Server error',
   });
 });
 
-const PORT = process.env.PORT || 5000;
+/* --------------------------------------
+   ❌ REMOVED app.listen()
+   AWS Lambda does not use ports
+---------------------------------------- */
 
-app.listen(PORT, () => {
-  console.log('\n🚀 ========================================');
-  console.log(`✅ Server running on port ${PORT}`);
-  console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🌐 API Base URL: http://localhost:${PORT}/api`);
-  console.log(`💳 Payment Routes: http://localhost:${PORT}/api/payments`);
-  console.log("GOOGLE_CLIENT_ID:", process.env.GOOGLE_CLIENT_ID);
-
-
-  // Check Razorpay configuration
-  const hasRazorpayKey = process.env.RAZORPAY_KEY_ID || process.env.key_id;
-  if (hasRazorpayKey) {
-    console.log(`✅ Razorpay: Configured`);
-  } else {
-    console.log(`⚠️  Razorpay: Not configured (set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env)`);
-  }
-
-  // Check MongoDB configuration
-  if (process.env.MONGODB_URI) {
-    console.log(`📦 MongoDB: URI configured`);
-    console.log("GOOGLE_CLIENT_ID:", process.env.GOOGLE_CLIENT_ID);
-
-  } else {
-    console.log(`⚠️  MongoDB: Not configured (set MONGODB_URI in .env)`);
-
-  }
-
-  console.log('========================================\n');
-});
-
+/* --------------------------------------
+   🚀 Export Lambda Handler
+---------------------------------------- */
+export const handler = serverless(app);

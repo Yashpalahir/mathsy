@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut, QrCode, Camera, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { QrReader } from "react-qr-reader";
+import QrReader from "react-qr-scanner";
 import { apiClient } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -81,13 +81,18 @@ const EducatorWelcome = () => {
                                 <div className="space-y-4">
                                     <div className="relative aspect-square max-w-sm mx-auto overflow-hidden rounded-xl border-4 border-primary/20 bg-black">
                                         <QrReader
-                                            onResult={(result, error) => {
-                                                if (result) {
-                                                    handleScan(result.getText());
+                                            delay={300}
+                                            onError={(err: any) => {
+                                                console.error(err);
+                                                toast.error("Camera access error");
+                                            }}
+                                            onScan={(data: any) => {
+                                                if (data) {
+                                                    handleScan(data.text);
                                                 }
                                             }}
-                                            constraints={{ facingMode: 'environment' }}
-                                            className="w-full h-full"
+                                            facingMode="rear"
+                                            style={{ width: '100%' }}
                                         />
                                         
                                         {/* Scanning Overlay */}
