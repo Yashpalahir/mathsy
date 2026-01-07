@@ -25,7 +25,10 @@ app.use(async (req, res, next) => {
 });
 
 /* ------------ CORS ------------- */
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL,
+  credentials: true
+}));
 app.use(passport.initialize());
 
 /* Avoid JSON parsing for multipart requests */

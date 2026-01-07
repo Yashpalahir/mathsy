@@ -165,7 +165,11 @@ const Courses = () => {
 
       // Get key from backend
       console.log('[Payment] Fetching payment key from backend...');
-      const keyRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/payments/key`);
+      const apiUrl = import.meta.env.VITE_API_URL;
+      if (!apiUrl) {
+        throw new Error('VITE_API_URL is not configured');
+      }
+      const keyRes = await fetch(`${apiUrl}/payments/key`);
       if (!keyRes.ok) {
         console.error('[Payment] Failed to fetch payment key, status:', keyRes.status);
         throw new Error('Unable to fetch payment key');
@@ -176,7 +180,7 @@ const Courses = () => {
 
       // Create order on server
       console.log('[Payment] Creating payment order with amount:', course.price);
-      const orderRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/payments/order`, {
+      const orderRes = await fetch(`${apiUrl}/payments/order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount: course.price })
@@ -207,7 +211,7 @@ const Courses = () => {
           // Verify payment on backend
           try {
             console.log('[Payment] Verifying payment with backend...');
-            const verifyRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/payments/verify`, {
+            const verifyRes = await fetch(`${apiUrl}/payments/verify`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(response),

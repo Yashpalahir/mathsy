@@ -8,9 +8,13 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@mathsy.com';
-const ADMIN_NAME = process.env.ADMIN_NAME || 'Admin';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+const ADMIN_NAME = process.env.ADMIN_NAME;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
+if (!ADMIN_EMAIL || !ADMIN_NAME || !ADMIN_PASSWORD) {
+  console.warn("⚠️ Admin credentials are not fully configured in environment variables.");
+}
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
