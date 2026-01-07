@@ -12,6 +12,7 @@ const courseSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Please provide a course description'],
       trim: true,
+      maxlength: [1000, 'Description cannot be more than 1000 characters'],
     },
     class: {
       type: String,
@@ -55,6 +56,31 @@ const courseSchema = new mongoose.Schema(
     videoUrl: {
       type: String,
       trim: true,
+    },
+    batchAbout: {
+      type: String,
+      trim: true,
+    },
+    courseDuration: {
+      startDate: {
+        type: Date,
+      },
+      endDate: {
+        type: Date,
+      },
+    },
+    validity: {
+      type: Date,
+    },
+    examGuidance: {
+      type: String,
+      trim: true,
+      default: 'Exam guidance at our Mathsy Offline centers',
+    },
+    counselingSupport: {
+      type: String,
+      trim: true,
+      default: 'One-to-one emotional well-being support by Mathsy counselors',
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,

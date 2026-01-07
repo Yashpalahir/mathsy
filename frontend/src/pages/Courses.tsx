@@ -4,6 +4,7 @@ import { Clock, Users, BookOpen, CheckCircle, Calendar, Loader2 } from "lucide-r
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { motion, Variants } from "framer-motion";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +16,29 @@ import {
 } from "@/components/ui/dialog";
 import { apiClient } from "@/lib/api";
 import { toast } from "sonner";
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 100,
+      damping: 15
+    }
+  },
+};
 
 interface Course {
   _id: string;
@@ -28,6 +52,14 @@ interface Course {
   syllabus?: string[];
   color?: string;
   popular?: boolean;
+  batchAbout?: string;
+  courseDuration?: {
+    startDate?: string;
+    endDate?: string;
+  };
+  validity?: string;
+  examGuidance?: string;
+  counselingSupport?: string;
 }
 
 const Courses = () => {
@@ -74,8 +106,11 @@ const Courses = () => {
         ? await apiClient.getCoursesForUser()
         : await apiClient.getCourses();
 
-      if (response.success && response.data) {
-        setCourses(response.data);
+      if (response.success) {
+        const data = (response as any).data || response;
+        if (Array.isArray(data)) {
+          setCourses(data);
+        }
       }
     } catch (error) {
       toast.error("Failed to load courses");
@@ -88,9 +123,12 @@ const Courses = () => {
   const fetchEnrollments = async () => {
     try {
       const response = await apiClient.getEnrollments();
-      if (response.success && response.data) {
-        const enrolledIds = new Set(response.data.map((e: any) => e.course._id || e.course));
-        setEnrolledCourseIds(enrolledIds);
+      if (response.success) {
+        const data = (response as any).data || response;
+        if (Array.isArray(data)) {
+          const enrolledIds = new Set<string>(data.map((e: any) => e.course._id || e.course));
+          setEnrolledCourseIds(enrolledIds);
+        }
       }
     } catch (error) {
       // Silently fail - enrollments are not critical for page load
@@ -113,22 +151,32 @@ const Courses = () => {
 
   const handleStartPayment = async (course: Course) => {
     try {
+      console.log('[Payment] Starting payment flow for course:', course._id, course.title);
       setPaymentLoading(true);
 
+      console.log('[Payment] Loading Razorpay script...');
       const loaded = await loadRazorpayScript();
       if (!loaded) {
+        console.error('[Payment] Failed to load Razorpay script');
         toast.error("Failed to load payment gateway. Try again later.");
         return;
       }
+      console.log('[Payment] Razorpay script loaded successfully');
 
       // Get key from backend
-      const keyRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/payments/key`);
-      if (!keyRes.ok) throw new Error('Unable to fetch payment key');
+      console.log('[Payment] Fetching payment key from backend...');
+      const keyRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/payments/key`);
+      if (!keyRes.ok) {
+        console.error('[Payment] Failed to fetch payment key, status:', keyRes.status);
+        throw new Error('Unable to fetch payment key');
+      }
       const keyJson = await keyRes.json();
       const key = keyJson.key;
+      console.log('[Payment] Payment key received successfully');
 
       // Create order on server
-      const orderRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/payments/order`, {
+      console.log('[Payment] Creating payment order with amount:', course.price);
+      const orderRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/payments/order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount: course.price })
@@ -136,43 +184,65 @@ const Courses = () => {
 
       if (!orderRes.ok) {
         const body = await orderRes.json().catch(() => null);
+        console.error('[Payment] Order creation failed:', body);
         throw new Error(body?.message || 'Unable to create payment order');
       }
 
       const order = await orderRes.json();
+      console.log('[Payment] Order created successfully:', order.id);
+
+      // Truncate description to meet Razorpay's 255 character limit
+      const truncatedDescription = course.description.substring(0, 255);
+      console.log('[Payment] Description length:', course.description.length, '-> truncated to:', truncatedDescription.length);
 
       const options = {
         key,
         amount: order.amount,
         currency: order.currency || 'INR',
         name: course.title,
-        description: course.description,
+        description: truncatedDescription,
         order_id: order.id,
         handler: async function (response: any) {
+          console.log('[Payment] Payment successful, received response:', response);
           // Verify payment on backend
           try {
-            const verifyRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/payments/verify`, {
+            console.log('[Payment] Verifying payment with backend...');
+            const verifyRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/payments/verify`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(response),
             });
             const verifyJson = await verifyRes.json();
+            console.log('[Payment] Verification response:', verifyJson);
+            
             if (verifyRes.ok && verifyJson.status === 'success') {
+              console.log('[Payment] Payment verified successfully');
               // Create enrollment with active status
               try {
+                console.log('[Payment] Creating enrollment for course:', course._id);
                 await apiClient.createEnrollment(course._id);
                 // Update enrolled courses list
                 setEnrolledCourseIds(prev => new Set([...prev, course._id]));
+                console.log('[Payment] Enrollment created successfully');
                 toast.success('Payment successful! You are now enrolled.');
               } catch (e) {
+                console.error('[Payment] Enrollment creation failed:', e);
                 toast.error('Payment successful but enrollment failed. Contact support.');
               }
             } else {
+              console.error('[Payment] Payment verification failed:', verifyJson);
               toast.error(verifyJson?.message || 'Payment verification failed');
             }
           } catch (err) {
-            // Payment verification error (logged)
+            console.error('[Payment] Payment verification error:', err);
             toast.error('Payment verification failed');
+          }
+        },
+        modal: {
+          ondismiss: function() {
+            console.log('[Payment] Payment modal dismissed by user');
+            console.log('[Payment] User closed the payment window without completing payment');
+            toast.error('Payment cancelled. Please try again when ready.');
           }
         },
         prefill: {
@@ -181,12 +251,39 @@ const Courses = () => {
         theme: { color: '#3399cc' },
       };
 
+      console.log('[Payment] Opening Razorpay checkout...');
       // @ts-ignore
       const rzp = new window.Razorpay(options);
+      
+      // Add error handler for payment failures
+      rzp.on('payment.failed', function (response: any) {
+        console.error('[Payment] Payment failed');
+        console.error('[Payment] Error code:', response.error.code);
+        console.error('[Payment] Error description:', response.error.description);
+        console.error('[Payment] Error source:', response.error.source);
+        console.error('[Payment] Error step:', response.error.step);
+        console.error('[Payment] Error reason:', response.error.reason);
+        console.error('[Payment] Full error object:', response.error);
+        console.error('[Payment] Order ID:', response.error.metadata?.order_id);
+        console.error('[Payment] Payment ID:', response.error.metadata?.payment_id);
+        
+        // Show user-friendly error message
+        const errorMessage = response.error.description || 'Payment failed. Please try again.';
+        toast.error(`Payment failed: ${errorMessage}`);
+        
+        // If it's a card issue, provide helpful guidance
+        if (response.error.description && response.error.description.includes('International')) {
+          console.warn('[Payment] Tip: Use Indian test cards for test mode');
+          console.warn('[Payment] Suggested test card: 4111 1111 1111 1111');
+          toast.error('For test mode, please use Indian test cards. Card: 4111 1111 1111 1111, CVV: any 3 digits, Expiry: any future date');
+        }
+      });
+      
       rzp.open();
       setIsDialogOpen(false);
+      console.log('[Payment] Razorpay checkout opened successfully');
     } catch (err) {
-      // Payment flow error (logged)
+      console.error('[Payment] Payment flow error:', err);
       toast.error((err as Error).message || 'Payment failed');
     } finally {
       setPaymentLoading(false);
@@ -195,16 +292,21 @@ const Courses = () => {
   return (
     <Layout>
       {/* Hero */}
-      <section className="py-20 bg-hero-gradient">
+      <section className="py-20 bg-hero-gradient overflow-hidden">
         <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="max-w-3xl mx-auto text-center"
+          >
             <h1 className="font-display text-4xl md:text-5xl font-bold text-primary-foreground mb-6">
               Our <span className="text-secondary">Courses</span>
             </h1>
             <p className="text-primary-foreground/80 text-lg">
               Structured curriculum designed for Class 8-12 students. Choose the course that fits your academic goals.
             </p>
-          </div>
+          </motion.div>
         </div>
       </section>
       {/* Payment Dialog */}
@@ -242,7 +344,7 @@ const Courses = () => {
 
       {/* Course Details Dialog */}
       <Dialog open={isDetailsOpen} onOpenChange={(open) => setIsDetailsOpen(open)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{selectedCourse ? selectedCourse.title : 'Course Details'}</DialogTitle>
             <DialogDescription>
@@ -250,16 +352,66 @@ const Courses = () => {
             </DialogDescription>
           </DialogHeader>
           {selectedCourse && (
-            <div className="space-y-4 py-4">
-              <div>
-                <h4 className="font-semibold">Syllabus</h4>
-                <ul className="list-disc list-inside text-sm text-muted-foreground">
-                  {selectedCourse.syllabus?.map((s, i) => (
-                    <li key={i}>{s}</li>
-                  ))}
-                </ul>
-              </div>
-              <div className="flex items-center justify-between">
+            <div className="space-y-6 py-4">
+              {/* About the Batch */}
+              {selectedCourse.batchAbout && (
+                <div>
+                  <h4 className="font-semibold text-lg mb-2">About the Batch</h4>
+                  <p className="text-sm text-muted-foreground whitespace-pre-line">{selectedCourse.batchAbout}</p>
+                </div>
+              )}
+
+              {/* Course Duration */}
+              {selectedCourse.courseDuration && (selectedCourse.courseDuration.startDate || selectedCourse.courseDuration.endDate) && (
+                <div>
+                  <h4 className="font-semibold mb-2">Course Duration</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedCourse.courseDuration.startDate && new Date(selectedCourse.courseDuration.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    {selectedCourse.courseDuration.startDate && selectedCourse.courseDuration.endDate && ' - '}
+                    {selectedCourse.courseDuration.endDate && new Date(selectedCourse.courseDuration.endDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </p>
+                </div>
+              )}
+
+              {/* Validity */}
+              {selectedCourse.validity && (
+                <div>
+                  <h4 className="font-semibold mb-2">Validity</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(selectedCourse.validity).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </p>
+                </div>
+              )}
+
+              {/* Exam Guidance */}
+              {selectedCourse.examGuidance && (
+                <div>
+                  <h4 className="font-semibold mb-2">Exam Guidance</h4>
+                  <p className="text-sm text-muted-foreground">{selectedCourse.examGuidance}</p>
+                </div>
+              )}
+
+              {/* Counseling Support */}
+              {selectedCourse.counselingSupport && (
+                <div>
+                  <h4 className="font-semibold mb-2">Emotional Well-being Support</h4>
+                  <p className="text-sm text-muted-foreground">{selectedCourse.counselingSupport}</p>
+                </div>
+              )}
+
+              {/* Syllabus */}
+              {selectedCourse.syllabus && selectedCourse.syllabus.length > 0 && (
+                <div>
+                  <h4 className="font-semibold mb-3">Syllabus</h4>
+                  <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                    {selectedCourse.syllabus.map((s, i) => (
+                      <li key={i}>{s}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between pt-4 border-t border-border">
                 <div>
                   <div className="text-muted-foreground">Price</div>
                   <div className="font-display text-2xl font-bold">₹{selectedCourse.price.toLocaleString()}</div>
@@ -288,19 +440,31 @@ const Courses = () => {
               <p className="text-muted-foreground">No courses available at the moment.</p>
             </div>
           ) : (
-            <div className="space-y-8">
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="space-y-8"
+            >
               {courses.map((course) => (
-                <div
+                <motion.div
                   key={course._id}
+                  variants={itemVariants}
+                  whileHover={{ y: -5, transition: { duration: 0.2 } }}
                   className="bg-card rounded-2xl shadow-card hover:shadow-card-hover transition-all overflow-hidden"
                 >
                   <div className="grid lg:grid-cols-3">
                     {/* Header */}
                     <div className={`bg-gradient-to-br ${course.color || 'from-mathsy-blue to-primary'} p-8 text-primary-foreground relative`}>
                       {course.popular && (
-                        <span className="absolute top-4 right-4 bg-secondary text-secondary-foreground text-xs font-bold px-3 py-1 rounded-full">
+                        <motion.span
+                          initial={{ x: 20, opacity: 0 }}
+                          animate={{ x: 0, opacity: 1 }}
+                          transition={{ delay: 0.5 }}
+                          className="absolute top-4 right-4 bg-secondary text-secondary-foreground text-xs font-bold px-3 py-1 rounded-full"
+                        >
                           Most Popular
-                        </span>
+                        </motion.span>
                       )}
                       <h2 className="font-display text-2xl font-bold mb-4">{course.title}</h2>
                       <p className="text-primary-foreground/80 mb-6">{course.description}</p>
@@ -358,9 +522,9 @@ const Courses = () => {
                       </div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           )}
         </div>
       </section>

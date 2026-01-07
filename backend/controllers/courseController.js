@@ -108,6 +108,11 @@ export const createCourse = async (req, res) => {
       syllabus,
       color,
       popular,
+      batchAbout,
+      courseDuration,
+      validity,
+      examGuidance,
+      counselingSupport,
     } = req.body;
 
     // Validation
@@ -129,6 +134,11 @@ export const createCourse = async (req, res) => {
       syllabus: Array.isArray(syllabus) ? syllabus : [],
       color: color || 'from-mathsy-blue to-primary',
       popular: popular || false,
+      batchAbout,
+      courseDuration,
+      validity,
+      examGuidance,
+      counselingSupport,
       createdBy: req.user.id,
     });
 
@@ -156,6 +166,12 @@ export const updateCourse = async (req, res) => {
         success: false,
         message: 'Course not found',
       });
+    }
+
+    // Map 'grade' from frontend to 'class' in model if present
+    if (req.body.grade) {
+      req.body.class = req.body.grade;
+      delete req.body.grade;
     }
 
     course = await Course.findByIdAndUpdate(req.params.id, req.body, {

@@ -1,10 +1,15 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import connectDB from './config/db.js';
 
 // Load env vars
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
@@ -39,6 +44,9 @@ app.use((req, res, next) => {
 
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Static folder for uploads
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Routes
 import authRoutes from './routes/authRoutes.js';
 import courseRoutes from './routes/courseRoutes.js';
@@ -51,6 +59,9 @@ import testRoutes from './routes/testRoutes.js';
 import paymentRoutes from './routes/payments.js';
 import studyMaterialRoutes from './routes/studyMaterialRoutes.js';
 import courseVideoRoutes from './routes/courseVideoRoutes.js';
+import feeStatusRoutes from './routes/feeStatusRoutes.js';
+import attendanceRoutes from './routes/attendanceRoutes.js';
+import dashboardRoutes from './routes/dashboardRoutes.js';
 // ...existing code...
 
 app.use('/api/auth', authRoutes);
@@ -64,6 +75,9 @@ app.use('/api/tests', testRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/study-materials', studyMaterialRoutes);
 app.use('/api/course-videos', courseVideoRoutes);
+app.use('/api/fee-status', feeStatusRoutes);
+app.use('/api/attendance', attendanceRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({

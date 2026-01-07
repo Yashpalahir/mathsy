@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 type ApiResponse<T> = {
   success: boolean;
@@ -114,10 +114,24 @@ class ApiClient {
     });
   }
 
-  async completeProfile(data: any) {
+  async completeProfile(data: FormData | any) {
     return this.request<any>('/auth/complete-profile', {
       method: 'PUT',
-      body: JSON.stringify(data),
+      body: data instanceof FormData ? data : JSON.stringify(data),
+    });
+  }
+
+  async sendWhatsAppOtp(phone: string) {
+    return this.request<any>('/auth/send-whatsapp-otp', {
+      method: 'POST',
+      body: JSON.stringify({ phone }),
+    });
+  }
+
+  async verifyWhatsAppOtp(otp: string) {
+    return this.request<any>('/auth/verify-whatsapp-otp', {
+      method: 'POST',
+      body: JSON.stringify({ otp }),
     });
   }
 
@@ -131,6 +145,20 @@ class ApiClient {
   async getMe() {
     return this.request<any>('/auth/me', {
       method: 'GET',
+    });
+  }
+
+  async educatorLogin(email: string, password: string) {
+    return this.request<{ token: string; user: any }>('/auth/educator-login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+  }
+
+  async addEducator(email: string, password: string) {
+    return this.request<{ success: boolean; data: any }>('/admin/add-educator', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
     });
   }
 
@@ -282,6 +310,35 @@ class ApiClient {
     }
 
     return response;
+  }
+
+  // Fee Status endpoints
+  async getFeeStatus() {
+    return this.request<{ data: any[] }>('/fee-status/my', {
+      method: 'GET',
+    });
+  }
+
+  // Dashboard endpoints
+  async getStudentStats() {
+    return this.request<{ data: { stats: any; recentTests: any[] } }>('/dashboard/student-stats', {
+      method: 'GET',
+    });
+  }
+
+  // Attendance endpoints
+  async generateAttendanceToken(type: 'IN' | 'OUT') {
+    return this.request<{ data: { token: string; expiresAt: string; type: string } }>('/attendance/generate', {
+      method: 'POST',
+      body: JSON.stringify({ type }),
+    });
+  }
+
+  async scanAttendanceQR(token: string) {
+    return this.request<any>('/attendance/scan', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
   }
 }
 

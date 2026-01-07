@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import Educator from '../models/Educator.js';
 
 // Protect routes
 export const protect = async (req, res, next) => {
@@ -18,9 +19,17 @@ export const protect = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Try to find in User model first
     req.user = await User.findById(decoded.id).select('-password');
-    
+
+    // If not found in User, try Educator
     if (!req.user) {
+      req.user = await Educator.findById(decoded.id).select('-password');
+    }
+
+    if (!req.user) {
+      console.log(`[AUTH] User/Educator not found for ID: ${decoded.id}`);
       return res.status(401).json({
         success: false,
         message: 'User not found',
@@ -47,5 +56,14 @@ export const authorize = (...roles) => {
     }
     next();
   };
+};
+
+// Admin only middleware
+export const adminOnly = (req, res, next) => {
+  if (req.user && req.user.role === 'admin') {
+    next();
+  } else {
+    res.status(401).json({ success: false, message: 'Not authorized as an admin' });
+  }
 };
 

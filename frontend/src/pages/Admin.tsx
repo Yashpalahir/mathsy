@@ -29,6 +29,14 @@ interface Course {
   color?: string;
   popular?: boolean;
   studentsCount?: number;
+  batchAbout?: string;
+  courseDuration?: {
+    startDate?: string;
+    endDate?: string;
+  };
+  validity?: string;
+  examGuidance?: string;
+  counselingSupport?: string;
 }
 
 interface StudyMaterial {
@@ -69,6 +77,12 @@ const Admin = () => {
     syllabus: "",
     color: "from-mathsy-blue to-primary",
     popular: false,
+    batchAbout: "",
+    startDate: "",
+    endDate: "",
+    validity: "",
+    examGuidance: "Exam guidance at our Mathsy Offline centers",
+    counselingSupport: "One-to-one emotional well-being support by Mathsy counselors",
   });
   const [materialFormData, setMaterialFormData] = useState({
     title: "",
@@ -81,6 +95,14 @@ const Admin = () => {
     course: "",
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  // Educator state
+  const [educatorFormData, setEducatorFormData] = useState({
+    email: "",
+    password: "",
+  });
+  const [isEducatorDialogOpen, setIsEducatorDialogOpen] = useState(false);
+
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || userType !== "admin")) {
@@ -134,6 +156,14 @@ const Admin = () => {
           : undefined,
         color: formData.color,
         popular: formData.popular,
+        batchAbout: formData.batchAbout || undefined,
+        courseDuration: (formData.startDate || formData.endDate) ? {
+          startDate: formData.startDate || undefined,
+          endDate: formData.endDate || undefined,
+        } : undefined,
+        validity: formData.validity || undefined,
+        examGuidance: formData.examGuidance || undefined,
+        counselingSupport: formData.counselingSupport || undefined,
       };
 
       if (editingCourse) {
@@ -165,6 +195,12 @@ const Admin = () => {
       syllabus: course.syllabus?.join(", ") || "",
       color: course.color || "from-mathsy-blue to-primary",
       popular: course.popular || false,
+      batchAbout: course.batchAbout || "",
+      startDate: course.courseDuration?.startDate ? new Date(course.courseDuration.startDate).toISOString().split('T')[0] : "",
+      endDate: course.courseDuration?.endDate ? new Date(course.courseDuration.endDate).toISOString().split('T')[0] : "",
+      validity: course.validity ? new Date(course.validity).toISOString().split('T')[0] : "",
+      examGuidance: course.examGuidance || "Exam guidance at our Mathsy Offline centers",
+      counselingSupport: course.counselingSupport || "One-to-one emotional well-being support by Mathsy counselors",
     });
     setIsDialogOpen(true);
   };
@@ -195,6 +231,12 @@ const Admin = () => {
       syllabus: "",
       color: "from-mathsy-blue to-primary",
       popular: false,
+      batchAbout: "",
+      startDate: "",
+      endDate: "",
+      validity: "",
+      examGuidance: "Exam guidance at our Mathsy Offline centers",
+      counselingSupport: "One-to-one emotional well-being support by Mathsy counselors",
     });
     setEditingCourse(null);
   };
@@ -291,6 +333,24 @@ const Admin = () => {
     setEditingMaterial(null);
     setIsMaterialDialogOpen(false);
   };
+
+  const handleEducatorSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (!educatorFormData.email || !educatorFormData.password) {
+        toast.error("Please provide both email and password");
+        return;
+      }
+
+      await (apiClient as any).addEducator(educatorFormData.email, educatorFormData.password);
+      toast.success("Educator added successfully");
+      setEducatorFormData({ email: "", password: "" });
+      setIsEducatorDialogOpen(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to add educator");
+    }
+  };
+
 
   if (authLoading) {
     return (
@@ -429,6 +489,70 @@ const Admin = () => {
                     onChange={(e) => setFormData({ ...formData, syllabus: e.target.value })}
                     placeholder="Rational Numbers, Linear Equations, Geometry..."
                     rows={3}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="batchAbout">About the Batch</Label>
+                  <Textarea
+                    id="batchAbout"
+                    value={formData.batchAbout}
+                    onChange={(e) => setFormData({ ...formData, batchAbout: e.target.value })}
+                    placeholder="Describe the batch details..."
+                    rows={3}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="startDate">Course Start Date</Label>
+                    <Input
+                      id="startDate"
+                      type="date"
+                      value={formData.startDate}
+                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="endDate">Course End Date</Label>
+                    <Input
+                      id="endDate"
+                      type="date"
+                      value={formData.endDate}
+                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="validity">Course Validity</Label>
+                  <Input
+                    id="validity"
+                    type="date"
+                    value={formData.validity}
+                    onChange={(e) => setFormData({ ...formData, validity: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="examGuidance">Exam Guidance</Label>
+                  <Textarea
+                    id="examGuidance"
+                    value={formData.examGuidance}
+                    onChange={(e) => setFormData({ ...formData, examGuidance: e.target.value })}
+                    placeholder="Exam guidance at our Mathsy Offline centers"
+                    rows={2}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="counselingSupport">Counseling Support</Label>
+                  <Textarea
+                    id="counselingSupport"
+                    value={formData.counselingSupport}
+                    onChange={(e) => setFormData({ ...formData, counselingSupport: e.target.value })}
+                    placeholder="One-to-one emotional well-being support by Mathsy counselors"
+                    rows={2}
                   />
                 </div>
 
@@ -604,6 +728,75 @@ const Admin = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Educator Management Section */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Plus className="w-5 h-5" />
+              Educator Management
+            </CardTitle>
+            <CardDescription>Add new educators to the platform</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-between items-center">
+              <p className="text-sm text-muted-foreground">
+                Create credentials for new educators
+              </p>
+              <Dialog open={isEducatorDialogOpen} onOpenChange={setIsEducatorDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="hero">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Educator
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Add New Educator</DialogTitle>
+                    <DialogDescription>Set email and password for the new educator</DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleEducatorSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="educator-email">Gmail / Email</Label>
+                      <Input
+                        id="educator-email"
+                        type="email"
+                        value={educatorFormData.email}
+                        onChange={(e) => setEducatorFormData({ ...educatorFormData, email: e.target.value })}
+                        placeholder="educator@gmail.com"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="educator-password">Password</Label>
+                      <Input
+                        id="educator-password"
+                        type="password"
+                        value={educatorFormData.password}
+                        onChange={(e) => setEducatorFormData({ ...educatorFormData, password: e.target.value })}
+                        placeholder="••••••••"
+                        required
+                      />
+                    </div>
+                    <div className="flex justify-end gap-3 pt-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsEducatorDialogOpen(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button type="submit" variant="hero">
+                        Add Educator
+                      </Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </CardContent>
+        </Card>
+
 
         {/* Study Material Dialog */}
         <Dialog open={isMaterialDialogOpen} onOpenChange={setIsMaterialDialogOpen}>

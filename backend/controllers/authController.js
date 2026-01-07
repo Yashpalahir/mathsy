@@ -1,5 +1,7 @@
 import User from '../models/User.js';
+import Profile from '../models/Profile.js';
 import Otp from '../models/Otp.js';
+import Educator from '../models/Educator.js';
 import generateToken from '../utils/generateToken.js';
 import sendEmail from '../utils/sendEmail.js';
 import dotenv from 'dotenv';
@@ -148,24 +150,28 @@ export const login = async (req, res) => {
 // @access  Private
 export const getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    let user = await User.findById(req.user.id).populate('profile');
+    
+    if (!user) {
+      user = await Educator.findById(req.user.id);
+    }
 
-    console.log('👤 [GET ME] Fetching user data for:', user.email);
-    console.log('👤 [GET ME] isProfileComplete:', user.isProfileComplete);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    console.log('👤 [GET ME] Fetching data for:', user.email);
+    console.log('👤 [GET ME] Role:', user.role);
 
     res.status(200).json({
       success: true,
       user: {
         id: user._id,
-        name: user.name,
+        name: user.name || 'Educator',
         email: user.email,
         role: user.role,
-        phone: user.phone,
-        avatar: user.avatar,
-        isProfileComplete: user.isProfileComplete, // 🔥 CRITICAL FIX: This was missing!
-        username: user.username,
-        studentClass: user.studentClass,
-        address: user.address,
+        isProfileComplete: user.isProfileComplete || (user.role === 'educator'),
+        profile: user.profile || null,
       },
     });
   } catch (error) {
@@ -488,34 +494,46 @@ export const completeProfile = async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    const { username, studentClass, address, avatar } = req.body;
+    const { username, studentClass, address, phone } = req.body;
 
     // Basic validation
     if (!username || !studentClass || !address) {
       return res.status(400).json({ success: false, message: 'Please provide all fields' });
     }
 
-    // Update fields
-    user.username = username;
-    user.studentClass = studentClass;
-    user.address = address;
-    if (avatar) user.avatar = avatar;
-    user.isProfileComplete = true;
+    let profile = await Profile.findOne({ user: user._id });
 
+    if (!profile) {
+      profile = new Profile({ user: user._id });
+    }
+
+    // Update fields
+    profile.username = username;
+    profile.studentClass = studentClass;
+    profile.address = address;
+    if (phone) profile.phone = phone;
+
+    // Handle avatar upload if present (now via Cloudinary)
+    if (req.file) {
+      profile.avatar = req.file.path; // Multer-Cloudinary sets path to the URL
+    }
+
+    await profile.save();
+
+    user.isProfileComplete = true;
     await user.save();
+
+    const populatedUser = await User.findById(user._id).populate('profile');
 
     res.status(200).json({
       success: true,
       user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        isProfileComplete: user.isProfileComplete,
-        username: user.username,
-        studentClass: user.studentClass,
-        address: user.address,
-        avatar: user.avatar,
+        id: populatedUser._id,
+        name: populatedUser.name,
+        email: populatedUser.email,
+        role: populatedUser.role,
+        isProfileComplete: populatedUser.isProfileComplete,
+        profile: populatedUser.profile
       },
     });
 
@@ -523,3 +541,162 @@ export const completeProfile = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// @desc    Send OTP to Phone (Handled by Firebase on frontend)
+// @route   POST /api/auth/send-whatsapp-otp
+// @access  Private
+export const sendWhatsAppOtp = async (req, res) => {
+  try {
+    const { phone } = req.body;
+    if (!phone) {
+      return res.status(400).json({ success: false, message: 'Please provide a phone number' });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Update phone in Profile
+    let profile = await Profile.findOne({ user: user._id });
+    if (!profile) {
+      profile = new Profile({ user: user._id, phone });
+    } else {
+      profile.phone = phone;
+    }
+    await profile.save();
+
+    res.status(200).json({
+      success: true,
+      message: `Phone number updated. OTP should be handled by frontend via Firebase.`,
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Verify Phone (Acknowledge Firebase verification)
+// @route   POST /api/auth/verify-whatsapp-otp
+// @access  Private
+export const verifyWhatsAppOtp = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Mark as verified in Profile
+    const profile = await Profile.findOne({ user: user._id });
+    if (profile) {
+      profile.isPhoneVerified = true;
+      await profile.save();
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Phone number marked as verified',
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Add new educator
+// @route   POST /api/admin/add-educator
+// @access  Private (Admin only)
+export const addEducator = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide email and password',
+      });
+    }
+
+    const educatorExists = await Educator.findOne({ email });
+    if (educatorExists) {
+      return res.status(400).json({
+        success: false,
+        message: 'Educator already exists with this email',
+      });
+    }
+
+    console.log(`[ADMIN] Adding educator: ${email}`);
+    const educator = await Educator.create({
+      email,
+      password,
+    });
+    console.log(`[ADMIN] Educator created successfully: ${educator._id}`);
+
+    res.status(201).json({
+      success: true,
+      data: educator,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Educator login
+// @route   POST /api/auth/educator-login
+// @access  Public
+export const educatorLogin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide email and password',
+      });
+    }
+
+    console.log(`[AUTH] Educator login attempt: ${email}`);
+    const educator = await Educator.findOne({ email, role: 'educator' });
+    if (!educator) {
+      console.log(`[AUTH] Educator not found or role mismatch: ${email}`);
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials',
+      });
+    }
+
+    console.log(`[AUTH] Educator found, checking password...`);
+    const isMatch = await educator.matchPassword(password);
+    console.log(`[AUTH] Password match result: ${isMatch}`);
+
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials',
+      });
+    }
+
+    const token = generateToken(educator._id);
+    console.log(`[AUTH] Login successful, token generated for: ${email}`);
+    console.log(`[AUTH] Returning user data: role=${educator.role}, id=${educator._id}`);
+
+    res.status(200).json({
+      success: true,
+      token,
+      user: {
+        id: educator._id,
+        email: educator.email,
+        role: 'educator',
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+

@@ -1,4 +1,5 @@
 import { Star, Quote } from "lucide-react";
+import { motion, Variants } from "framer-motion";
 
 const testimonials = [
   {
@@ -35,11 +36,41 @@ const testimonials = [
   },
 ];
 
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.2,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.9, y: 20 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 100,
+      damping: 15
+    }
+  },
+};
+
 export const TestimonialsSection = () => {
   return (
-    <section className="py-20 bg-muted">
+    <section className="py-20 bg-muted overflow-hidden">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-16"
+        >
           <span className="inline-block bg-accent/20 text-accent font-semibold px-4 py-2 rounded-full text-sm mb-4">
             Testimonials
           </span>
@@ -49,16 +80,24 @@ export const TestimonialsSection = () => {
           <p className="text-muted-foreground max-w-2xl mx-auto">
             Join thousands of satisfied students and parents who trust Mathsy for quality education
           </p>
-        </div>
+        </motion.div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          className="grid md:grid-cols-2 lg:grid-cols-4 gap-6"
+        >
           {testimonials.map((testimonial) => (
-            <div
+            <motion.div
               key={testimonial.id}
+              variants={itemVariants}
+              whileHover={{ y: -5, transition: { duration: 0.2 } }}
               className="bg-card rounded-2xl p-6 shadow-card hover:shadow-card-hover transition-all duration-300 relative"
             >
               <Quote className="absolute top-4 right-4 w-8 h-8 text-primary/10" />
-              
+
               <div className="flex items-center gap-3 mb-4">
                 <img
                   src={testimonial.image}
@@ -80,9 +119,9 @@ export const TestimonialsSection = () => {
               <p className="text-foreground/80 text-sm leading-relaxed">
                 "{testimonial.content}"
               </p>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );
