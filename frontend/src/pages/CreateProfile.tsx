@@ -1,7 +1,7 @@
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { 
@@ -13,11 +13,14 @@ import {
     Phone, 
     Send, 
     CheckCircle2, 
-    Navigation 
+    Navigation,
+    Edit2
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiClient } from "@/lib/api";
 import { z } from "zod";
+import { auth } from "@/lib/firebase";
+import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from "firebase/auth";
 
 /* ---------------- ZOD SCHEMA ---------------- */
 
@@ -46,13 +49,26 @@ const CreateProfile = () => {
     const [phone, setPhone] = useState("");
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+    const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
     // OTP states
     const [otp, setOtp] = useState("");
     const [showOtpInput, setShowOtpInput] = useState(false);
     const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+    const [resendTimer, setResendTimer] = useState(0);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
+
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (resendTimer > 0) {
+            interval = setInterval(() => {
+                setResendTimer((prev) => prev - 1);
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [resendTimer]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -74,16 +90,43 @@ const CreateProfile = () => {
 
         try {
             setIsSendingOtp(true);
-            const response = await apiClient.sendWhatsAppOtp(phone);
-            if (response.success) {
-                setShowOtpInput(true);
-                toast.success("OTP sent to WhatsApp!");
+            
+            if (!recaptchaVerifierRef.current) {
+                recaptchaVerifierRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
+                    'size': 'invisible',
+                    'callback': () => {
+                        console.log('reCAPTCHA verified');
+                    }
+                });
             }
+
+            let formattedPhone = phone.trim();
+            if (!formattedPhone.startsWith('+')) {
+                formattedPhone = `+91${formattedPhone}`; // Default to India
+            }
+
+            const confirmation = await signInWithPhoneNumber(auth, formattedPhone, recaptchaVerifierRef.current);
+            setConfirmationResult(confirmation);
+            
+            setShowOtpInput(true);
+            setResendTimer(30); // 30 seconds cooldown
+            toast.success("OTP sent to your phone!");
         } catch (error: any) {
+            console.error("Firebase Auth Error:", error);
             toast.error(error.message || "Failed to send OTP");
+            if (recaptchaVerifierRef.current) {
+                recaptchaVerifierRef.current.clear();
+                recaptchaVerifierRef.current = null;
+            }
         } finally {
             setIsSendingOtp(false);
         }
+    };
+
+    const handleEditPhone = () => {
+        setShowOtpInput(false);
+        setOtp("");
+        setResendTimer(0);
     };
 
     const handleVerifyOtp = async () => {
@@ -92,15 +135,27 @@ const CreateProfile = () => {
             return;
         }
 
+        if (!confirmationResult) {
+            toast.error("Please request an OTP first");
+            return;
+        }
+
         try {
             setIsVerifyingOtp(true);
-            const response = await apiClient.verifyWhatsAppOtp(otp);
+            
+            // 1. Verify with Firebase
+            await confirmationResult.confirm(otp);
+            
+            // 2. Notify backend to mark as verified in our DB
+            const response = await apiClient.verifyWhatsAppOtp("verified_by_firebase");
+            
             if (response.success) {
                 setIsPhoneVerified(true);
                 setShowOtpInput(false);
                 toast.success("Phone verified successfully!");
             }
         } catch (error: any) {
+            console.error("Verification Error:", error);
             toast.error(error.message || "Invalid OTP");
         } finally {
             setIsVerifyingOtp(false);
@@ -220,6 +275,8 @@ const CreateProfile = () => {
                                     <p className="text-xs text-muted-foreground mt-2">Click to upload profile photo</p>
                                 </div>
 
+                                <div id="recaptcha-container"></div>
+
                                 <div>
                                     <label className="block text-sm font-medium text-foreground mb-2">
                                         Username
@@ -237,7 +294,7 @@ const CreateProfile = () => {
 
                                 <div>
                                     <label className="block text-sm font-medium text-foreground mb-2">
-                                        Phone Number (WhatsApp)
+                                        Phone Number
                                     </label>
                                     <div className="flex gap-2">
                                         <div className="relative flex-1">
@@ -260,6 +317,17 @@ const CreateProfile = () => {
                                                 {isSendingOtp ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify"}
                                             </Button>
                                         )}
+                                        {!isPhoneVerified && showOtpInput && (
+                                            <Button 
+                                                type="button" 
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={handleEditPhone}
+                                                title="Edit Phone Number"
+                                            >
+                                                <Edit2 className="h-4 w-4" />
+                                            </Button>
+                                        )}
                                         {isPhoneVerified && (
                                             <div className="flex items-center text-green-600 px-2">
                                                 <CheckCircle2 className="h-6 w-6" />
@@ -270,9 +338,19 @@ const CreateProfile = () => {
 
                                 {showOtpInput && (
                                     <div className="bg-primary/5 p-4 rounded-lg border border-primary/10 space-y-3">
-                                        <label className="block text-sm font-medium text-foreground">
-                                            Enter WhatsApp OTP
-                                        </label>
+                                        <div className="flex justify-between items-center">
+                                            <label className="block text-sm font-medium text-foreground">
+                                                Enter OTP
+                                            </label>
+                                            <button
+                                                type="button"
+                                                className={`text-xs ${resendTimer > 0 ? 'text-muted-foreground cursor-not-allowed' : 'text-primary hover:underline'}`}
+                                                onClick={handleSendOtp}
+                                                disabled={resendTimer > 0 || isSendingOtp}
+                                            >
+                                                {resendTimer > 0 ? `Resend in ${resendTimer}s` : "Resend OTP"}
+                                            </button>
+                                        </div>
                                         <div className="flex gap-2">
                                             <Input
                                                 placeholder="Enter 6-digit OTP"
@@ -289,7 +367,7 @@ const CreateProfile = () => {
                                                 {isVerifyingOtp ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirm"}
                                             </Button>
                                         </div>
-                                        <p className="text-xs text-muted-foreground">Check your WhatsApp for the code</p>
+                                        <p className="text-xs text-muted-foreground">Check your phone for the code</p>
                                     </div>
                                 )}
 

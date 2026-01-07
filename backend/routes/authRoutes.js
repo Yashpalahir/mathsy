@@ -4,38 +4,14 @@ import { protect } from '../middleware/auth.js';
 import passport from 'passport';
 import generateToken from '../utils/generateToken.js';
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
+import { storage } from '../utils/cloudinary.js';
 
 const router = express.Router();
 
-// Multer Config
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const uploadDir = 'uploads/';
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir);
-        }
-        cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-        cb(null, `${Date.now()}-${file.originalname}`);
-    }
-});
-
+// Multer Config with Cloudinary Storage
 const upload = multer({
     storage,
     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-    fileFilter: (req, file, cb) => {
-        const filetypes = /jpeg|jpg|png|webp/;
-        const mimetype = filetypes.test(file.mimetype);
-        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-
-        if (mimetype && extname) {
-            return cb(null, true);
-        }
-        cb(new Error('Only images are allowed (jpeg, jpg, png, webp)'));
-    }
 });
 
 router.post('/register', register);

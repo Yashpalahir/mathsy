@@ -27,40 +27,14 @@ const userSchema = new mongoose.Schema(
       enum: ['student', 'parent', 'admin'],
       default: 'student',
     },
-    phone: {
-      type: String,
-      trim: true,
-    },
-    isPhoneVerified: {
+    isProfileComplete: {
       type: Boolean,
       default: false,
-    },
-    avatar: {
-      type: String,
-    },
-    studentClass: {
-      type: String,
-      enum: ['Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'],
-      trim: true,
     },
     googleId: {
       type: String,
       unique: true,
       sparse: true,
-    },
-    username: {
-      type: String,
-      unique: true,
-      sparse: true,
-      trim: true,
-    },
-    address: {
-      type: String,
-      trim: true,
-    },
-    isProfileComplete: {
-      type: Boolean,
-      default: false,
     },
     otp: {
       type: String,
@@ -73,8 +47,18 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   }
 );
+
+// Virtual for profile
+userSchema.virtual('profile', {
+  ref: 'Profile',
+  localField: '_id',
+  foreignField: 'user',
+  justOne: true,
+});
 
 // Hash password before saving
 userSchema.pre('save', async function (next) {
