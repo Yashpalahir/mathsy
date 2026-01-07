@@ -8,7 +8,7 @@ dotenv.config();
 console.log('🔧 [PASSPORT] Initializing Google OAuth Strategy...');
 console.log('🔧 [PASSPORT] Client ID:', process.env.GOOGLE_CLIENT_ID ? '✓ Set' : '✗ Missing');
 console.log('🔧 [PASSPORT] Client Secret:', process.env.GOOGLE_CLIENT_SECRET ? '✓ Set' : '✗ Missing');
-console.log('🔧 [PASSPORT] Redirect URI:', process.env.GOOGLE_REDIRECT_URI || '/api/auth/google/callback');
+console.log('🔧 [PASSPORT] Redirect URI:', process.env.GOOGLE_REDIRECT_URI);
 
 passport.use(
     new GoogleStrategy(
