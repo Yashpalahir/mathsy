@@ -134,7 +134,9 @@ const StudentDashboard = () => {
     return null;
   }
 
-  const displayName = profile?.full_name || user?.email || "Student";
+  const profileData = profile || user?.profile;
+  const displayName = profileData?.username || user?.name || "Student";
+  const avatarUrl = profileData?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`;
 
   const upcomingClasses = [
     { subject: "Class 10 - Quadratic Equations", time: "10:00 AM", date: "Today" },
@@ -163,11 +165,20 @@ const StudentDashboard = () => {
         <div className="container mx-auto px-4">
           {/* Header */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-            <div>
-              <h1 className="font-display text-3xl font-bold text-foreground">
-                Welcome, {displayName}!
-              </h1>
-              <p className="text-muted-foreground">Student Dashboard</p>
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-full border-2 border-primary/20 overflow-hidden bg-background shadow-sm">
+                <img 
+                  src={avatarUrl} 
+                  alt={displayName} 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div>
+                <h1 className="font-display text-3xl font-bold text-foreground">
+                  Welcome, {displayName}!
+                </h1>
+                <p className="text-muted-foreground">Student Dashboard</p>
+              </div>
             </div>
             <Button variant="outline" onClick={handleLogout}>
               Logout

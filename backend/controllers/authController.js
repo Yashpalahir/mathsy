@@ -1,16 +1,12 @@
 import User from '../models/User.js';
+import Profile from '../models/Profile.js';
 import Otp from '../models/Otp.js';
 import Educator from '../models/Educator.js';
 import generateToken from '../utils/generateToken.js';
 import sendEmail from '../utils/sendEmail.js';
 import dotenv from 'dotenv';
-import twilio from 'twilio';
 
 dotenv.config();
-
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-const twilioClient = twilio(accountSid, authToken);
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@mathsy.com';
 const ADMIN_NAME = process.env.ADMIN_NAME || 'Admin';
@@ -154,7 +150,12 @@ export const login = async (req, res) => {
 // @access  Private
 export const getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id) || await Educator.findById(req.user.id);
+    let user = await User.findById(req.user.id).populate('profile');
+    
+    if (!user) {
+      user = await Educator.findById(req.user.id);
+    }
+
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
@@ -169,12 +170,8 @@ export const getMe = async (req, res) => {
         name: user.name || 'Educator',
         email: user.email,
         role: user.role,
-        phone: user.phone,
-        avatar: user.avatar,
         isProfileComplete: user.isProfileComplete || (user.role === 'educator'),
-        username: user.username,
-        studentClass: user.studentClass,
-        address: user.address,
+        profile: user.profile || null,
       },
     });
   } catch (error) {
@@ -504,35 +501,39 @@ export const completeProfile = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide all fields' });
     }
 
-    // Update fields
-    user.username = username;
-    user.studentClass = studentClass;
-    user.address = address;
-    if (phone) user.phone = phone;
+    let profile = await Profile.findOne({ user: user._id });
 
-    // Handle avatar upload if present
-    if (req.file) {
-      user.avatar = `/uploads/${req.file.filename}`;
+    if (!profile) {
+      profile = new Profile({ user: user._id });
     }
 
-    user.isProfileComplete = true;
+    // Update fields
+    profile.username = username;
+    profile.studentClass = studentClass;
+    profile.address = address;
+    if (phone) profile.phone = phone;
 
+    // Handle avatar upload if present (now via Cloudinary)
+    if (req.file) {
+      profile.avatar = req.file.path; // Multer-Cloudinary sets path to the URL
+    }
+
+    await profile.save();
+
+    user.isProfileComplete = true;
     await user.save();
+
+    const populatedUser = await User.findById(user._id).populate('profile');
 
     res.status(200).json({
       success: true,
       user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        isProfileComplete: user.isProfileComplete,
-        username: user.username,
-        studentClass: user.studentClass,
-        address: user.address,
-        avatar: user.avatar,
-        phone: user.phone,
-        isPhoneVerified: user.isPhoneVerified
+        id: populatedUser._id,
+        name: populatedUser.name,
+        email: populatedUser.email,
+        role: populatedUser.role,
+        isProfileComplete: populatedUser.isProfileComplete,
+        profile: populatedUser.profile
       },
     });
 
@@ -541,7 +542,7 @@ export const completeProfile = async (req, res) => {
   }
 };
 
-// @desc    Send OTP to WhatsApp (Simulated)
+// @desc    Send OTP to Phone (Handled by Firebase on frontend)
 // @route   POST /api/auth/send-whatsapp-otp
 // @access  Private
 export const sendWhatsAppOtp = async (req, res) => {
@@ -556,43 +557,18 @@ export const sendWhatsAppOtp = async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    // Generate 6 digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // Store OTP in User model
-    user.otp = otp;
-    user.otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-    user.phone = phone;
-    await user.save();
-
-    // Send Real WhatsApp Message using Twilio
-    try {
-      // Format phone number for Twilio WhatsApp
-      let formattedPhone = phone.trim();
-      if (!formattedPhone.startsWith('whatsapp:')) {
-        if (!formattedPhone.startsWith('+')) {
-          formattedPhone = `+91${formattedPhone}`; // Default to India if no country code
-        }
-        formattedPhone = `whatsapp:${formattedPhone}`;
-      }
-
-      await twilioClient.messages.create({
-        from: process.env.TWILIO_WHATSAPP_FROM || 'whatsapp:+14155238886',
-        contentSid: process.env.TWILIO_CONTENT_SID || 'HX229f5a04fd0510ce1b071852155d3e75',
-        contentVariables: JSON.stringify({ "1": otp }),
-        to: formattedPhone
-      });
-
-      console.log(`✅ [WHATSAPP OTP] Sent to ${formattedPhone}`);
-    } catch (twilioError) {
-      console.error('❌ [TWILIO ERROR]', twilioError.message);
-      // We don't return error to user here as the OTP is already saved, 
-      // but in production you might want to handle this better.
+    // Update phone in Profile
+    let profile = await Profile.findOne({ user: user._id });
+    if (!profile) {
+      profile = new Profile({ user: user._id, phone });
+    } else {
+      profile.phone = phone;
     }
+    await profile.save();
 
     res.status(200).json({
       success: true,
-      message: `OTP sent to WhatsApp: ${phone}`,
+      message: `Phone number updated. OTP should be handled by frontend via Firebase.`,
     });
 
   } catch (error) {
@@ -600,33 +576,26 @@ export const sendWhatsAppOtp = async (req, res) => {
   }
 };
 
-// @desc    Verify WhatsApp OTP
+// @desc    Verify Phone (Acknowledge Firebase verification)
 // @route   POST /api/auth/verify-whatsapp-otp
 // @access  Private
 export const verifyWhatsAppOtp = async (req, res) => {
   try {
-    const { otp } = req.body;
-    if (!otp) {
-      return res.status(400).json({ success: false, message: 'Please provide the OTP' });
-    }
-
-    const user = await User.findById(req.user.id).select('+otp +otpExpires');
+    const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    if (user.otp !== otp || user.otpExpires < Date.now()) {
-      return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
+    // Mark as verified in Profile
+    const profile = await Profile.findOne({ user: user._id });
+    if (profile) {
+      profile.isPhoneVerified = true;
+      await profile.save();
     }
-
-    user.isPhoneVerified = true;
-    user.otp = undefined;
-    user.otpExpires = undefined;
-    await user.save();
 
     res.status(200).json({
       success: true,
-      message: 'Phone number verified successfully',
+      message: 'Phone number marked as verified',
     });
 
   } catch (error) {
