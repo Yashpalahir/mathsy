@@ -47,7 +47,11 @@ router.get(
         console.log('🎫 [CALLBACK] JWT token generated:', token.substring(0, 20) + '...');
 
         // Redirect to frontend with token
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:8080';
+        const frontendUrl = process.env.FRONTEND_URL;
+        if (!frontendUrl) {
+            console.error('❌ [CALLBACK] FRONTEND_URL is not configured');
+            return res.status(500).json({ success: false, message: 'Server configuration error' });
+        }
         const redirectUrl = `${frontendUrl}/auth/success?token=${token}`;
         console.log('🔄 [CALLBACK] Redirecting to frontend:', redirectUrl.replace(token, 'TOKEN_HIDDEN'));
         res.redirect(redirectUrl);

@@ -1,22 +1,30 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
+
+let isConnected = false; // Track the connection status
 
 const connectDB = async () => {
-  try {
-    if (!process.env.MONGODB_URI) {
-      console.warn('⚠️  MONGODB_URI not set in .env file. Database features will not work.');
-      console.warn('⚠️  Payment API will still work, but other features require database connection.');
-      return;
-    }
+  if (isConnected) {
+    // Reuse existing DB connection in Lambda
+    return;
+  }
 
-    const conn = await mongoose.connect(process.env.MONGODB_URI);
-    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+  if (!process.env.MONGODB_URI) {
+    console.warn("⚠️ MONGODB_URI missing. Database features will NOT work.");
+    return;
+  }
+
+  try {
+    const db = await mongoose.connect(process.env.MONGODB_URI, {
+      maxPoolSize: 10, // Recommended for serverless
+    });
+
+    isConnected = db.connections[0].readyState === 1;
+
+    console.log("✅ MongoDB Connected:", db.connection.host);
   } catch (error) {
-    console.error(`❌ MongoDB Connection Error: ${error.message}`);
-    console.warn('⚠️  Server will continue running, but database features will not work.');
-    console.warn('⚠️  Payment API will still work without database connection.');
-    // Don't exit - allow server to run for payment testing
+    console.error("❌ MongoDB Connection Error:", error.message);
+    console.warn("⚠️ Continuing Lambda execution without DB...");
   }
 };
 
 export default connectDB;
-

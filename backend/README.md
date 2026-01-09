@@ -18,7 +18,7 @@ Node.js + Express + MongoDB backend for the Mathsy application.
 npm install
 ```
 
-2. Create a `.env` file in the backend directory:
+2. Create a `.env` file in the backend directory (refer to `env.example` for all required variables):
 ```env
 PORT=5000
 NODE_ENV=development
@@ -26,6 +26,20 @@ MONGODB_URI=mongodb://localhost:27017/mathsy
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 JWT_EXPIRE=7d
 FRONTEND_URL=http://localhost:5173
+
+# Admin Credentials
+ADMIN_EMAIL=admin@mathsy.com
+ADMIN_NAME=Admin
+ADMIN_PASSWORD=admin
+
+# Google OAuth
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_REDIRECT_URI=http://localhost:5000/api/auth/google/callback
+
+# Razorpay
+RAZORPAY_KEY_ID=your_razorpay_key_id
+RAZORPAY_KEY_SECRET=your_razorpay_key_secret
 ```
 
 3. Make sure MongoDB is running on your system.
