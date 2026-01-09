@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api";
 import { motion, Variants } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import {
   BookOpen,
   Video,

@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { QrReader } from "react-qr-reader";
 import { apiClient } from "@/lib/api";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 
 const EducatorWelcome = () => {
     const { user, logout } = useAuth();
