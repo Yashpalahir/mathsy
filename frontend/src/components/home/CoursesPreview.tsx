@@ -63,7 +63,7 @@ export const CoursesPreview = () => {
     }
   };
   return (
-    <section className="py-20 bg-background overflow-hidden">
+    <section className="py-10 bg-background overflow-hidden">
       <div className="container mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -131,11 +131,11 @@ export const CoursesPreview = () => {
                     </div>
                     <div className="flex items-center gap-2 text-sm text-foreground/70">
                       <Users className="w-4 h-4" />
-                      <span>{course.studentsCount || 0}+ enrolled</span>
+                      <span>{course.studentsCount || 50}+ enrolled</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-foreground/70">
                       <BookOpen className="w-4 h-4" />
-                      <span>{course.chapters || 0} chapters</span>
+                      <span>{course.chapters || 50} chapters</span>
                     </div>
                   </div>
 

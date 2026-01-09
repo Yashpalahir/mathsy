@@ -21,7 +21,7 @@ export const HeroSection = () => {
   };
 
   return (
-    <section className="relative min-h-[90vh] flex items-center overflow-hidden">
+    <section className="relative min-h-[75vh] flex items-center overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 bg-hero-gradient" />
       <div className="absolute inset-0 opacity-30" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")" }} />
@@ -79,7 +79,7 @@ export const HeroSection = () => {
               className="inline-flex items-center gap-2 bg-primary-foreground/10 backdrop-blur-sm rounded-full px-4 py-2 text-primary-foreground text-sm"
             >
               <Star className="w-4 h-4 fill-secondary text-secondary" />
-              <span>Trusted by 5000+ Students</span>
+              <span>Trusted by 500+ Students</span>
             </motion.div>
 
             <motion.h1
@@ -116,7 +116,7 @@ export const HeroSection = () => {
               className="grid grid-cols-3 gap-6 pt-8 border-t border-primary-foreground/20"
             >
               {[
-                { icon: Users, value: "5000+", label: "Students" },
+                { icon: Users, value: "500+", label: "Students" },
                 { icon: Award, value: "98%", label: "Success Rate" },
                 { icon: Star, value: "4.9", label: "Rating" },
               ].map((stat, i) => (
