@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { apiClient } from "@/lib/api";
 
-type UserType = "student" | "teacher" | "admin" | "educator" | null;
+type UserType = "student" | "parent" | "teacher" | "admin" | "educator" | null;
 
 interface Profile {
   username?: string;
