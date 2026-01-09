@@ -121,6 +121,13 @@ class ApiClient {
     });
   }
 
+  async updateProfile(data: FormData | any) {
+    return this.request<any>('/dashboard/profile', {
+      method: 'PUT',
+      body: data instanceof FormData ? data : JSON.stringify(data),
+    });
+  }
+
   async sendWhatsAppOtp(phone: string) {
     return this.request<any>('/auth/send-whatsapp-otp', {
       method: 'POST',

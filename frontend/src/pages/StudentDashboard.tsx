@@ -4,6 +4,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { apiClient } from "@/lib/api";
 import { motion, Variants } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
@@ -19,17 +29,27 @@ import {
   CreditCard,
   Loader2,
   QrCode,
-  RefreshCw
+  RefreshCw,
+  Pencil,
+  Camera
 } from "lucide-react";
 
 const StudentDashboard = () => {
-  const { user, profile, userType, isAuthenticated, isLoading, logout } = useAuth();
+  const { user, profile, userType, isAuthenticated, isLoading, logout, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [feeStatuses, setFeeStatuses] = useState<any[]>([]);
   const [isFeesLoading, setIsFeesLoading] = useState(true);
   const [stats, setStats] = useState<any>(null);
   const [recentTests, setRecentTests] = useState<any[]>([]);
   const [isStatsLoading, setIsStatsLoading] = useState(true);
+
+  // Edit Profile States
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newUsername, setNewUsername] = useState("");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   // Attendance states
   const [attendanceToken, setAttendanceToken] = useState<{ token: string; expiresAt: string; type: string } | null>(null);
@@ -83,6 +103,49 @@ const StudentDashboard = () => {
     }
   };
 
+  const handleEditProfile = () => {
+    setNewName(user?.name || "");
+    setNewUsername(profile?.username || user?.profile?.username || "");
+    setAvatarPreview(profile?.avatar || user?.profile?.avatar || null);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAvatarFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const onUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setIsUpdatingProfile(true);
+      const formData = new FormData();
+      formData.append("name", newName);
+      formData.append("username", newUsername);
+      if (avatarFile) {
+        formData.append("avatar", avatarFile);
+      }
+
+      const response = await apiClient.updateProfile(formData);
+      if (response.success) {
+        toast.success("Profile updated successfully");
+        await refreshUser();
+        setIsEditDialogOpen(false);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to update profile");
+    } finally {
+      setIsUpdatingProfile(false);
+    }
+  };
+
   const generateToken = async (type: 'IN' | 'OUT') => {
     try {
       setIsGeneratingToken(true);
@@ -130,7 +193,7 @@ const StudentDashboard = () => {
     );
   }
 
-  if (!isAuthenticated || userType === "parent") {
+  if (!isAuthenticated || (userType as string) === "parent") {
     return null;
   }
 
@@ -166,23 +229,121 @@ const StudentDashboard = () => {
           {/* Header */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full border-2 border-primary/20 overflow-hidden bg-background shadow-sm">
-                <img 
-                  src={avatarUrl} 
-                  alt={displayName} 
-                  className="w-full h-full object-cover"
-                />
+              <div className="relative group">
+                <div className="w-16 h-16 rounded-full border-2 border-primary/20 overflow-hidden bg-background shadow-sm">
+                  <img 
+                    src={avatarUrl} 
+                    alt={displayName} 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <button 
+                  onClick={handleEditProfile}
+                  className="absolute -bottom-1 -right-1 p-1.5 bg-primary text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                >
+                  <Pencil className="w-3 h-3" />
+                </button>
               </div>
-              <div>
-                <h1 className="font-display text-3xl font-bold text-foreground">
-                  Welcome, {displayName}!
-                </h1>
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2">
+                  <h1 className="font-display text-3xl font-bold text-foreground">
+                    Welcome, {displayName}!
+                  </h1>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 rounded-full text-muted-foreground hover:text-primary"
+                    onClick={handleEditProfile}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                </div>
                 <p className="text-muted-foreground">Student Dashboard</p>
               </div>
             </div>
-            <Button variant="outline" onClick={handleLogout}>
-              Logout
-            </Button>
+            <div className="flex gap-2">
+              <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Edit Profile</DialogTitle>
+                    <DialogDescription>
+                      Update your profile information here. Click save when you're done.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={onUpdateProfile} className="space-y-6 pt-4">
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="relative group">
+                        <div className="w-24 h-24 rounded-full border-4 border-primary/10 overflow-hidden bg-muted">
+                          {avatarPreview ? (
+                            <img src={avatarPreview} alt="Preview" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-muted text-muted-foreground">
+                              <Camera className="w-8 h-8" />
+                            </div>
+                          )}
+                        </div>
+                        <Label 
+                          htmlFor="avatar-upload" 
+                          className="absolute bottom-0 right-0 p-2 bg-primary text-white rounded-full cursor-pointer hover:bg-primary/90 transition-colors shadow-lg"
+                        >
+                          <Camera className="w-4 h-4" />
+                          <Input 
+                            id="avatar-upload" 
+                            type="file" 
+                            accept="image/*" 
+                            className="hidden" 
+                            onChange={handleAvatarChange}
+                          />
+                        </Label>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Click the camera icon to upload a new photo</p>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Full Name</Label>
+                        <Input 
+                          id="name" 
+                          value={newName} 
+                          onChange={(e) => setNewName(e.target.value)} 
+                          placeholder="Your full name"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="username">Username</Label>
+                        <Input 
+                          id="username" 
+                          value={newUsername} 
+                          onChange={(e) => setNewUsername(e.target.value)} 
+                          placeholder="Your unique username"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <DialogFooter>
+                      <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button type="submit" variant="hero" disabled={isUpdatingProfile}>
+                        {isUpdatingProfile ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          'Save Changes'
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+              <Button variant="outline" onClick={handleLogout}>
+                Logout
+              </Button>
+            </div>
           </div>
 
           {/* Quick Stats */}
