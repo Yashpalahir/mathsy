@@ -1,0 +1,54 @@
+service: mathsy-backend
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: ap-south-1
+  profile: default  # Mumbai region
+  memorySize: 1024     # Faster CPU, fewer cold starts
+  timeout: 12          # Good for image uploads, Razorpay
+  environment:
+    NODE_ENV: production
+
+    # Database
+    MONGODB_URI: ${env:MONGODB_URI}
+    PORT: ${env:PORT}
+    JWT_SECRET: ${env:JWT_SECRET}
+    JWT_EXPIRE: ${env:JWT_EXPIRE}
+    # Cloudinary
+    CLOUDINARY_CLOUD_NAME: ${env:CLOUDINARY_CLOUD_NAME}
+    CLOUDINARY_API_KEY: ${env:CLOUDINARY_API_KEY}
+    CLOUDINARY_API_SECRET: ${env:CLOUDINARY_API_SECRET}
+
+    # Google OAuth
+    GOOGLE_CLIENT_ID: ${env:GOOGLE_CLIENT_ID}
+    GOOGLE_CLIENT_SECRET: ${env:GOOGLE_CLIENT_SECRET}
+    GOOGLE_REDIRECT_URI: ${env:GOOGLE_REDIRECT_URI}
+
+    # Razorpay
+    RAZORPAY_KEY_ID: ${env:RAZORPAY_KEY_ID}
+    RAZORPAY_KEY_SECRET: ${env:RAZORPAY_KEY_SECRET}
+
+    # Emails
+    EMAIL_SERVICE: ${env:EMAIL_SERVICE}
+    EMAIL_USER: ${env:EMAIL_USER}
+    EMAIL_PASS: ${env:EMAIL_PASS}
+    EMAIL_FROM: ${env:EMAIL_FROM}
+
+    # Misc
+    FRONTEND_URL: ${env:FRONTEND_URL}
+    ADMIN_PASSWORD: ${env:ADMIN_PASSWORD}
+
+functions:
+  app:
+    handler: server.handler        # <— matches your server.js export
+    events:
+      - httpApi: '*'               # Fastest API Gateway type
+
+package:
+  patterns:
+    - "!uploads/**"                # No local uploads for Lambda
+    - "!node_modules/.cache/**"
+    - "!*.md"
+    - "!*.log"
+    - "!README*"

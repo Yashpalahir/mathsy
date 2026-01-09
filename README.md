@@ -20,7 +20,7 @@ cd backend
 npm install
 ```
 
-3. Create a `.env` file in the `backend` directory:
+3. Create a `.env` file in the `backend` directory (refer to `env.example` for all required variables):
 ```env
 PORT=5000
 NODE_ENV=development
@@ -28,6 +28,20 @@ MONGODB_URI=mongodb://localhost:27017/mathsy
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 JWT_EXPIRE=7d
 FRONTEND_URL=http://localhost:8080
+
+# Admin Credentials
+ADMIN_EMAIL=admin@mathsy.com
+ADMIN_NAME=Admin
+ADMIN_PASSWORD=admin
+
+# Google OAuth
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_REDIRECT_URI=http://localhost:5000/api/auth/google/callback
+
+# Razorpay
+RAZORPAY_KEY_ID=your_razorpay_key_id
+RAZORPAY_KEY_SECRET=your_razorpay_key_secret
 ```
 
 **Note:** 
@@ -65,9 +79,11 @@ cd frontend
 npm install
 ```
 
-3. (Optional) Create a `.env` file in the `frontend` directory if you want to customize the API URL:
+3. Create a `.env` file in the `frontend` directory (refer to `env.example` for all required variables):
 ```env
 VITE_API_URL=http://localhost:5000/api
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_key
 ```
 
 4. Start the development server:

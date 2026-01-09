@@ -26,9 +26,13 @@ app.use(async (req, res, next) => {
 
 /* ------------ CORS ------------- */
 app.use(cors({
-  origin: process.env.FRONTEND_URL,
-  credentials: true
+  origin: [
+    "https://mathsy.in",
+    "https://www.mathsy.in",
+  ],
+  credentials: true,
 }));
+
 app.use(passport.initialize());
 
 /* Avoid JSON parsing for multipart requests */
