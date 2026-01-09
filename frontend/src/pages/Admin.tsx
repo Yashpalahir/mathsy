@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useState, useEffect } from "react";
 import { apiClient } from "@/lib/api";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { Loader2, Plus, Edit, Trash2, BookOpen, FileText } from "lucide-react";

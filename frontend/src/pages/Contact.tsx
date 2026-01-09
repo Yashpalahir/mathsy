@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Mail, Phone, MapPin, Clock, Send } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import { apiClient } from "@/lib/api";
 
 const contactInfo = [

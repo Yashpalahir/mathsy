@@ -1,9 +1,9 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import Index from "./pages/Index";
 import About from "./pages/About";
 import Courses from "./pages/Courses";
@@ -21,6 +21,7 @@ import GoogleAuthCallback from "./pages/GoogleAuthCallback";
 import CourseWatch from "./pages/CourseWatch";
 import EducatorWelcome from "./pages/EducatorWelcome";
 import NotFound from "./pages/NotFound";
+import { PhoneVerificationGuard } from "@/components/PhoneVerificationGuard";
 
 const queryClient = new QueryClient();
 
@@ -28,26 +29,75 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
-        <Toaster />
-        <Sonner />
+        <ToastContainer position="top-right" autoClose={3000} />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/courses" element={<Courses />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/results" element={<Results />} />
-            <Route path="/live-classes" element={<LiveClasses />} />
-            <Route path="/study-materials" element={<StudyMaterials />} />
+            {/* Public Routes - Wrapped to redirect unverified logged-in users */}
+            <Route path="/" element={<PhoneVerificationGuard requireAuth={false}><Index /></PhoneVerificationGuard>} />
+            <Route path="/about" element={<PhoneVerificationGuard requireAuth={false}><About /></PhoneVerificationGuard>} />
+            <Route path="/courses" element={<PhoneVerificationGuard requireAuth={false}><Courses /></PhoneVerificationGuard>} />
+            <Route path="/contact" element={<PhoneVerificationGuard requireAuth={false}><Contact /></PhoneVerificationGuard>} />
+            <Route path="/results" element={<PhoneVerificationGuard requireAuth={false}><Results /></PhoneVerificationGuard>} />
+            <Route path="/live-classes" element={<PhoneVerificationGuard requireAuth={false}><LiveClasses /></PhoneVerificationGuard>} />
+            <Route path="/study-materials" element={<PhoneVerificationGuard requireAuth={false}><StudyMaterials /></PhoneVerificationGuard>} />
+            
+            {/* Auth Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/admin-login" element={<AdminLogin />} />
-            <Route path="/student-dashboard" element={<StudentDashboard />} />
-            <Route path="/parent-dashboard" element={<ParentDashboard />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/create-profile" element={<CreateProfile />} />
-            <Route path="/course/:id/watch" element={<CourseWatch />} />
             <Route path="/auth/success" element={<GoogleAuthCallback />} />
-            <Route path="/educator-welcome" element={<EducatorWelcome />} />
+
+            {/* Profile Completion Page - Must be accessible to unverified users */}
+            <Route 
+              path="/create-profile" 
+              element={
+                <PhoneVerificationGuard requireAuth={true}>
+                  <CreateProfile />
+                </PhoneVerificationGuard>
+              } 
+            />
+
+            {/* Protected Routes */}
+            <Route
+              path="/student-dashboard"
+              element={
+                <PhoneVerificationGuard requireAuth={true}>
+                  <StudentDashboard />
+                </PhoneVerificationGuard>
+              }
+            />
+            <Route
+              path="/parent-dashboard"
+              element={
+                <PhoneVerificationGuard requireAuth={true}>
+                  <ParentDashboard />
+                </PhoneVerificationGuard>
+              }
+            />
+            <Route
+              path="/course/:id/watch"
+              element={
+                <PhoneVerificationGuard requireAuth={true}>
+                  <CourseWatch />
+                </PhoneVerificationGuard>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <PhoneVerificationGuard requireAuth={true}>
+                  <Admin />
+                </PhoneVerificationGuard>
+              }
+            />
+            <Route
+              path="/educator-welcome"
+              element={
+                <PhoneVerificationGuard requireAuth={true}>
+                  <EducatorWelcome />
+                </PhoneVerificationGuard>
+              }
+            />
+
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
