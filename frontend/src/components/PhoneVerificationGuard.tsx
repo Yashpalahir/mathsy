@@ -9,33 +9,31 @@ type Props = {
 };
 
 /**
- * Blocks access to protected dashboard pages or public pages until the user has verified phone number.
- * - requireAuth=true (default): Unauthenticated -> /login
- * - requireAuth=false: Unauthenticated -> Allowed
- * - Authenticated Student without verified phone -> /create-profile (even for public routes)
- * - Admin/Educator -> allowed
+ * Blocks access to pages until the user has verified phone number IF they are logged in.
+ * If requireAuth is true, it also enforces login.
  */
 export const PhoneVerificationGuard = ({ children, requireAuth = true }: Props) => {
   const { isAuthenticated, isLoading, user, profile } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
-  const isPhoneVerified = !!profile?.isPhoneVerified;
-  const isProfileComplete = !!user?.isProfileComplete;
-  const role = user?.role;
-  const isUnverifiedStudent = isAuthenticated && role === "student" && (!isProfileComplete || !isPhoneVerified);
-
   useEffect(() => {
     if (isLoading) return;
 
-    if (isUnverifiedStudent) {
-      if (location.pathname !== "/create-profile") {
-        navigate("/create-profile", { replace: true });
+    if (isAuthenticated) {
+      const role = user?.role;
+      if (role === "admin" || role === "educator") return;
+
+      const isPhoneVerified = !!profile?.isPhoneVerified;
+      const isProfileComplete = !!user?.isProfileComplete;
+
+      if (!isProfileComplete || !isPhoneVerified) {
+        if (location.pathname !== "/create-profile") {
+          navigate("/create-profile", { replace: true });
+        }
       }
-    } else if (requireAuth && !isAuthenticated) {
-      navigate("/login", { replace: true, state: { from: location } });
     }
-  }, [isAuthenticated, isLoading, location, navigate, isUnverifiedStudent, requireAuth]);
+  }, [isAuthenticated, isLoading, location.pathname, navigate, profile?.isPhoneVerified, user?.isProfileComplete, user?.role]);
 
   if (isLoading) {
     return (
@@ -45,14 +43,21 @@ export const PhoneVerificationGuard = ({ children, requireAuth = true }: Props) 
     );
   }
 
-  // If unverified student, only allow them to see the create-profile page
-  if (isUnverifiedStudent) {
-    return location.pathname === "/create-profile" ? <>{children}</> : null;
+  if (requireAuth && !isAuthenticated) {
+    return <Navigate to="/login" replace />;
   }
 
-  // If requireAuth is true and not authenticated, don't show children (useEffect will redirect)
-  if (requireAuth && !isAuthenticated) {
-    return null;
+  // If authenticated as student/parent, enforce profile completion even on public routes
+  if (isAuthenticated) {
+    const role = user?.role;
+    if (role !== "admin" && role !== "educator") {
+      const isPhoneVerified = !!profile?.isPhoneVerified;
+      const isProfileComplete = !!user?.isProfileComplete;
+
+      if ((!isProfileComplete || !isPhoneVerified) && location.pathname !== "/create-profile") {
+        return <Navigate to="/create-profile" replace />;
+      }
+    }
   }
 
   return <>{children}</>;
