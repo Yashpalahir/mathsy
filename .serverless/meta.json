@@ -1,0 +1,27 @@
+{
+  "unknown": {
+    "versionFramework": "4.29.4",
+    "dashboard": {
+      "isEnabledForService": false,
+      "requiredAuthentication": true,
+      "orgFeaturesInUse": null,
+      "orgObservabilityIntegrations": null,
+      "serviceAppId": null,
+      "serviceProvider": null,
+      "instanceParameters": null
+    },
+    "command": [
+      "login"
+    ],
+    "options": {},
+    "orgId": "417d1acc-548c-44ac-8638-45e3a7d5ce72",
+    "orgName": "mathsy",
+    "userId": "x2gwZDT0Y7pNGVldz7",
+    "userName": "mathsy",
+    "serviceProviderAwsCfStackId": null,
+    "serviceProviderAwsCfStackCreated": null,
+    "serviceProviderAwsCfStackUpdated": null,
+    "serviceProviderAwsCfStackStatus": null,
+    "serviceProviderAwsCfStackOutputs": null
+  }
+}
