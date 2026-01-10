@@ -29,6 +29,7 @@ const ParentDashboard = () => {
 
   const handleLogout = async () => {
     await logout();
+    toast.success("Logged out successfully");
     navigate("/login");
   };
 

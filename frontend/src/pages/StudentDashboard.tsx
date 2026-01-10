@@ -83,6 +83,7 @@ const StudentDashboard = () => {
       }
     } catch (error) {
       console.error("Error fetching fee status:", error);
+      toast.error("Failed to load fee status");
     } finally {
       setIsFeesLoading(false);
     }
@@ -98,6 +99,7 @@ const StudentDashboard = () => {
       }
     } catch (error) {
       console.error("Error fetching dashboard stats:", error);
+      toast.error("Failed to load dashboard statistics");
     } finally {
       setIsStatsLoading(false);
     }
