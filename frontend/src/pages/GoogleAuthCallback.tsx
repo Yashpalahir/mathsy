@@ -55,14 +55,10 @@ const GoogleAuthCallback = () => {
                 console.log('📡 [CALLBACK PAGE] Response received:', response);
 
                 if (response.success && response.user) {
+                    const user = response.user;
                     console.log('✅ [CALLBACK PAGE] User data retrieved successfully');
-                    console.log('👤 [CALLBACK PAGE] User:', {
-                        id: response.user.id,
-                        email: response.user.email,
-                        name: response.user.name,
-                        role: response.user.role,
-                        isProfileComplete: response.user.isProfileComplete
-                    });
+                    console.log('👤 [CALLBACK PAGE] User Profile Status:', user.isProfileComplete ? 'COMPLETE' : 'INCOMPLETE');
+                    console.log('👤 [CALLBACK PAGE] User Role:', user.role);
 
                     // Authentication successful!
                     setStatus("success");
@@ -71,17 +67,18 @@ const GoogleAuthCallback = () => {
                     // Step 5: Wait briefly to show success message
                     setTimeout(() => {
                         // Step 6: Redirect based on user's profile completion and role
-                        if (!response.user.isProfileComplete) {
-                            console.log('🔀 [CALLBACK PAGE] Redirecting to /create-profile (profile incomplete)');
+                        // FORCE REDIRECT to create-profile if flag is false or missing
+                        if (user.isProfileComplete === false || user.isProfileComplete === undefined) {
+                            console.log('🔀 [CALLBACK PAGE] Redirecting to /create-profile');
                             navigate("/create-profile", { replace: true });
-                        } else if (response.user.role === "admin") {
-                            console.log('🔀 [CALLBACK PAGE] Redirecting to /admin (admin user)');
+                        } else if (user.role === "admin") {
+                            console.log('🔀 [CALLBACK PAGE] Redirecting to /admin');
                             navigate("/admin", { replace: true });
                         } else {
-                            console.log('🔀 [CALLBACK PAGE] Redirecting to /student-dashboard (regular user)');
+                            console.log('🔀 [CALLBACK PAGE] Redirecting to /student-dashboard');
                             navigate("/student-dashboard", { replace: true });
                         }
-                    }, 1500);
+                    }, 1000);
                 } else {
                     throw new Error("Failed to fetch user data");
                 }

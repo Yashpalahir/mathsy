@@ -66,18 +66,25 @@ const Login = () => {
 
   // Redirect logic
   if (isAuthenticated && user) {
-    if ((user.role as any) === "educator") {
-      return <Navigate to="/educator-welcome" replace />;
-    }
-    if (!user.isProfileComplete) {
-      return <Navigate to="/create-profile" replace />;
-    }
-    if (user.role === "admin") {
-      return <Navigate to="/admin" replace />;
-    }
+    console.log('🚪 [LOGIN PAGE] User already authenticated, redirecting...');
+    console.log('👤 [LOGIN PAGE] User role:', user.role);
+    console.log('👤 [LOGIN PAGE] Profile complete:', user.isProfileComplete);
+
     if (user.role === "educator") {
       return <Navigate to="/educator-welcome" replace />;
     }
+    
+    // For students and other roles, check profile completion
+    if (user.isProfileComplete === false || user.isProfileComplete === undefined) {
+      console.log('🔀 [LOGIN PAGE] Redirecting to /create-profile');
+      return <Navigate to="/create-profile" replace />;
+    }
+
+    if (user.role === "admin") {
+      return <Navigate to="/admin" replace />;
+    }
+
+    console.log('🔀 [LOGIN PAGE] Redirecting to /student-dashboard');
     return <Navigate to="/student-dashboard" replace />;
   }
 
