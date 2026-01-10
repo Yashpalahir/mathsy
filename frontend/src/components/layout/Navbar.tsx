@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { motion, AnimatePresence } from "framer-motion";
 import mathsyLogo from "@/assets/mathsy-logo.png";
+import { toast } from "react-toastify";
 
 const navLinks = [
   { name: "Home", path: "/" },
