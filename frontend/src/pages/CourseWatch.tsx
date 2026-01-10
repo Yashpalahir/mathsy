@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiClient } from "@/lib/api";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import { Loader2, ArrowLeft, BookOpen, PlayCircle, Clock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 

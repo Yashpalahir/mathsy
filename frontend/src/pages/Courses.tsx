@@ -15,7 +15,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { apiClient } from "@/lib/api";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },

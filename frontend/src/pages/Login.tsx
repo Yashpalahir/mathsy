@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import { Loader2, Mail, Lock, ArrowRight, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { z } from "zod";

@@ -522,6 +522,14 @@ export const completeProfile = async (req, res) => {
       profile.avatar = req.file.path; // Multer-Cloudinary sets path to the URL
     }
 
+    // Ensure phone is verified before marking profile as complete
+    if (!profile.isPhoneVerified) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Phone number must be verified before completing profile' 
+      });
+    }
+
     await profile.save();
 
     user.isProfileComplete = true;

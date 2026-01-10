@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
-import { Loader2, CheckCircle2, XCircle } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { Loader2 } from "lucide-react";
+import { toast } from "react-toastify";
 import { apiClient } from "@/lib/api";
 
 /**
@@ -15,10 +15,6 @@ import { apiClient } from "@/lib/api";
 const GoogleAuthCallback = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const { user, isLoading: authLoading } = useAuth();
-
-    const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
-    const [message, setMessage] = useState("Completing authentication...");
 
     useEffect(() => {
         const handleCallback = async () => {
@@ -32,10 +28,8 @@ const GoogleAuthCallback = () => {
 
                 if (!token) {
                     console.error('❌ [CALLBACK PAGE] No token found in URL query parameters');
-                    // No token found in URL - authentication failed
-                    setStatus("error");
-                    setMessage("No authentication token received. Please try again.");
-                    setTimeout(() => navigate("/login"), 3000);
+                    toast.error("No authentication token received. Please try again.");
+                    navigate("/login", { replace: true });
                     return;
                 }
 
@@ -64,24 +58,22 @@ const GoogleAuthCallback = () => {
                         isProfileComplete: response.user.isProfileComplete
                     });
 
-                    // Authentication successful!
-                    setStatus("success");
-                    setMessage("Authentication successful! Redirecting...");
+                    toast.success("Logged in successfully");
 
-                    // Step 5: Wait briefly to show success message
-                    setTimeout(() => {
-                        // Step 6: Redirect based on user's profile completion and role
-                        if (!response.user.isProfileComplete) {
-                            console.log('🔀 [CALLBACK PAGE] Redirecting to /create-profile (profile incomplete)');
-                            navigate("/create-profile", { replace: true });
-                        } else if (response.user.role === "admin") {
-                            console.log('🔀 [CALLBACK PAGE] Redirecting to /admin (admin user)');
-                            navigate("/admin", { replace: true });
-                        } else {
-                            console.log('🔀 [CALLBACK PAGE] Redirecting to /student-dashboard (regular user)');
-                            navigate("/student-dashboard", { replace: true });
-                        }
-                    }, 1500);
+                    // Redirect based on role + profile completion + phone verification
+                    const isPhoneVerified = !!response.user?.profile?.isPhoneVerified;
+
+                    if (response.user.role === "admin") {
+                        navigate("/admin", { replace: true });
+                        return;
+                    }
+
+                    if (!response.user.isProfileComplete || !isPhoneVerified) {
+                        navigate("/create-profile", { replace: true });
+                        return;
+                    }
+
+                    navigate("/student-dashboard", { replace: true });
                 } else {
                     throw new Error("Failed to fetch user data");
                 }
@@ -89,22 +81,14 @@ const GoogleAuthCallback = () => {
                 console.error('❌ [CALLBACK PAGE] Error in OAuth callback:', error);
                 console.error('❌ [CALLBACK PAGE] Error details:', error instanceof Error ? error.message : 'Unknown error');
 
-                // Authentication failed
-                setStatus("error");
-                setMessage(
-                    error instanceof Error
-                        ? error.message
-                        : "Authentication failed. Please try again."
-                );
+                toast.error(error instanceof Error ? error.message : "Authentication failed. Please try again.");
 
                 // Clean up invalid token
                 console.log('🧹 [CALLBACK PAGE] Cleaning up invalid token...');
                 localStorage.removeItem("token");
                 apiClient.setToken(null);
 
-                // Redirect to login after showing error
-                console.log('🔀 [CALLBACK PAGE] Redirecting to /login in 3 seconds...');
-                setTimeout(() => navigate("/login"), 3000);
+                navigate("/login", { replace: true });
             }
         };
 
@@ -116,45 +100,16 @@ const GoogleAuthCallback = () => {
             <section className="py-20 bg-muted min-h-[80vh] flex items-center">
                 <div className="container mx-auto px-4">
                     <div className="max-w-md mx-auto bg-card rounded-2xl shadow-lg p-8">
-                        <div className="text-center space-y-6">
-                            {/* Icon */}
+                        <div className="text-center space-y-4">
                             <div className="flex justify-center">
-                                {status === "loading" && (
-                                    <Loader2 className="h-16 w-16 animate-spin text-primary" />
-                                )}
-                                {status === "success" && (
-                                    <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center animate-in zoom-in">
-                                        <CheckCircle2 className="h-10 w-10 text-green-600" />
-                                    </div>
-                                )}
-                                {status === "error" && (
-                                    <div className="h-16 w-16 rounded-full bg-red-100 flex items-center justify-center animate-in zoom-in">
-                                        <XCircle className="h-10 w-10 text-red-600" />
-                                    </div>
-                                )}
+                                <Loader2 className="h-12 w-12 animate-spin text-primary" />
                             </div>
-
-                            {/* Title */}
-                            <h1 className="font-display text-2xl font-bold text-foreground">
-                                {status === "loading" && "Authenticating..."}
-                                {status === "success" && "Success!"}
-                                {status === "error" && "Authentication Failed"}
+                            <h1 className="font-display text-xl font-bold text-foreground">
+                                Signing you in...
                             </h1>
-
-                            {/* Message */}
-                            <p className="text-muted-foreground">{message}</p>
-
-                            {/* Loading indicator for status */}
-                            {status === "loading" && (
-                                <div className="flex flex-col items-center gap-2 pt-4">
-                                    <div className="flex gap-1">
-                                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
-                                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
-                                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">Please wait...</p>
-                                </div>
-                            )}
+                            <p className="text-muted-foreground text-sm">
+                                Please wait while we complete Google authentication.
+                            </p>
                         </div>
                     </div>
                 </div>

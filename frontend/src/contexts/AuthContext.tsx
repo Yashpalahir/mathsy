@@ -1,7 +1,16 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { apiClient } from "@/lib/api";
 
-type UserType = "student" | "teacher" | "admin" | "educator" | null;
+type UserType = "student" | "parent" | "teacher" | "admin" | "educator" | null;
+
+interface Profile {
+  username?: string;
+  avatar?: string;
+  studentClass?: string;
+  address?: string;
+  phone?: string;
+  isPhoneVerified?: boolean;
+}
 
 interface User {
   id: string;
@@ -11,10 +20,12 @@ interface User {
   isProfileComplete?: boolean;
   phone?: string;
   avatar?: string;
+  profile?: Profile | null;
 }
 
 interface AuthContextType {
   user: User | null;
+  profile: Profile | null;
   userType: UserType;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -27,6 +38,7 @@ interface AuthContextType {
   loginWithOtp: (email: string, otp: string) => Promise<{ error: string | null }>;
   loginWithGoogle: (data: any) => Promise<{ error: string | null }>;
   completeProfile: (data: any) => Promise<{ error: string | null }>;
+  refreshUser: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -65,13 +77,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const refreshUser = async () => {
+    setIsLoading(true);
+    await fetchUser();
+  };
+
   const login = async (email: string, password: string): Promise<{ error: string | null }> => {
     try {
       const response = await apiClient.login(email, password);
       if (response.success && response.token && response.user) {
         apiClient.setToken(response.token);
-        setUser(response.user);
-        setUserType(response.user.role);
+        await refreshUser();
         return { error: null };
       }
       return { error: "Login failed" };
@@ -85,8 +101,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const response = await apiClient.adminLogin(password);
       if (response.success && response.token && response.user) {
         apiClient.setToken(response.token);
-        setUser(response.user);
-        setUserType(response.user.role);
+        await refreshUser();
         return { error: null };
       }
       return { error: "Admin login failed" };
@@ -102,8 +117,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log(`[AUTH_CONTEXT] Educator login response:`, response);
       if (response.success && response.token && response.user) {
         apiClient.setToken(response.token);
-        setUser(response.user);
-        setUserType(response.user.role);
+        await refreshUser();
         console.log(`[AUTH_CONTEXT] Educator logged in successfully. User role: ${response.user.role}`);
         return { error: null };
       }
@@ -135,8 +149,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (response.success && response.token && response.user) {
         apiClient.setToken(response.token);
-        setUser(response.user);
-        setUserType(response.user.role);
+        await refreshUser();
         return { error: null };
       }
       return { error: "Signup failed" };
@@ -174,8 +187,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const response = await apiClient.loginWithOtp(email, otp);
       if (response.success && response.token && response.user) {
         apiClient.setToken(response.token);
-        setUser(response.user);
-        setUserType(response.user.role);
+        await refreshUser();
         return { error: null };
       }
       return { error: "OTP Login failed" };
@@ -189,8 +201,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const response = await apiClient.googleLogin(data);
       if (response.success && response.token && response.user) {
         apiClient.setToken(response.token);
-        setUser(response.user);
-        setUserType(response.user.role);
+        await refreshUser();
         return { error: null };
       }
       return { error: "Google Login failed" };
@@ -223,6 +234,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider
       value={{
         user,
+        profile: user?.profile ?? null,
         userType,
         isAuthenticated: !!user,
         isLoading,
@@ -235,6 +247,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         loginWithOtp,
         loginWithGoogle,
         completeProfile,
+        refreshUser,
         logout
       }}
     >
