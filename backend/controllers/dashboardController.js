@@ -108,9 +108,7 @@ export const updateUserProfile = async (req, res) => {
 
     await profile.save();
 
-    const populatedUser = await User.findById(user._id).populate('profile');
-
-    res.status(200).json({
+    const populatedUser = await User.findById(user._id).populate('profile');    res.status(200).json({
       success: true,
       message: 'Profile updated successfully',
       user: {

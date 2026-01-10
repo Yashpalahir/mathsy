@@ -32,35 +32,68 @@ const App = () => (
         <ToastContainer position="top-right" autoClose={3000} />
         <BrowserRouter>
           <Routes>
-            {/* Public Routes - Wrapped to redirect unverified logged-in users */}
-            <Route path="/" element={<PhoneVerificationGuard requireAuth={false}><Index /></PhoneVerificationGuard>} />
-            <Route path="/about" element={<PhoneVerificationGuard requireAuth={false}><About /></PhoneVerificationGuard>} />
-            <Route path="/courses" element={<PhoneVerificationGuard requireAuth={false}><Courses /></PhoneVerificationGuard>} />
-            <Route path="/contact" element={<PhoneVerificationGuard requireAuth={false}><Contact /></PhoneVerificationGuard>} />
-            <Route path="/results" element={<PhoneVerificationGuard requireAuth={false}><Results /></PhoneVerificationGuard>} />
-            <Route path="/live-classes" element={<PhoneVerificationGuard requireAuth={false}><LiveClasses /></PhoneVerificationGuard>} />
-            <Route path="/study-materials" element={<PhoneVerificationGuard requireAuth={false}><StudyMaterials /></PhoneVerificationGuard>} />
-            
-            {/* Auth Routes */}
+            <Route
+              path="/"
+              element={
+                <PhoneVerificationGuard requireAuth={false}>
+                  <Index />
+                </PhoneVerificationGuard>
+              }
+            />
+            <Route
+              path="/about"
+              element={
+                <PhoneVerificationGuard requireAuth={false}>
+                  <About />
+                </PhoneVerificationGuard>
+              }
+            />
+            <Route
+              path="/courses"
+              element={
+                <PhoneVerificationGuard requireAuth={false}>
+                  <Courses />
+                </PhoneVerificationGuard>
+              }
+            />
+            <Route
+              path="/contact"
+              element={
+                <PhoneVerificationGuard requireAuth={false}>
+                  <Contact />
+                </PhoneVerificationGuard>
+              }
+            />
+            <Route
+              path="/results"
+              element={
+                <PhoneVerificationGuard requireAuth={false}>
+                  <Results />
+                </PhoneVerificationGuard>
+              }
+            />
+            <Route
+              path="/live-classes"
+              element={
+                <PhoneVerificationGuard requireAuth={false}>
+                  <LiveClasses />
+                </PhoneVerificationGuard>
+              }
+            />
+            <Route
+              path="/study-materials"
+              element={
+                <PhoneVerificationGuard requireAuth={false}>
+                  <StudyMaterials />
+                </PhoneVerificationGuard>
+              }
+            />
             <Route path="/login" element={<Login />} />
             <Route path="/admin-login" element={<AdminLogin />} />
-            <Route path="/auth/success" element={<GoogleAuthCallback />} />
-
-            {/* Profile Completion Page - Must be accessible to unverified users */}
-            <Route 
-              path="/create-profile" 
-              element={
-                <PhoneVerificationGuard requireAuth={true}>
-                  <CreateProfile />
-                </PhoneVerificationGuard>
-              } 
-            />
-
-            {/* Protected Routes */}
             <Route
               path="/student-dashboard"
               element={
-                <PhoneVerificationGuard requireAuth={true}>
+                <PhoneVerificationGuard>
                   <StudentDashboard />
                 </PhoneVerificationGuard>
               }
@@ -68,7 +101,7 @@ const App = () => (
             <Route
               path="/parent-dashboard"
               element={
-                <PhoneVerificationGuard requireAuth={true}>
+                <PhoneVerificationGuard>
                   <ParentDashboard />
                 </PhoneVerificationGuard>
               }
@@ -76,30 +109,24 @@ const App = () => (
             <Route
               path="/course/:id/watch"
               element={
-                <PhoneVerificationGuard requireAuth={true}>
+                <PhoneVerificationGuard>
                   <CourseWatch />
                 </PhoneVerificationGuard>
               }
             />
-            <Route
-              path="/admin"
-              element={
-                <PhoneVerificationGuard requireAuth={true}>
-                  <Admin />
-                </PhoneVerificationGuard>
-              }
-            />
-            <Route
-              path="/educator-welcome"
-              element={
-                <PhoneVerificationGuard requireAuth={true}>
-                  <EducatorWelcome />
-                </PhoneVerificationGuard>
-              }
-            />
-
+            <Route path="/admin" element={<Admin />} />
+            <Route path="/create-profile" element={<CreateProfile />} />
+            <Route path="/auth/success" element={<GoogleAuthCallback />} />
+            <Route path="/educator-welcome" element={<EducatorWelcome />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
+            <Route
+              path="*"
+              element={
+                <PhoneVerificationGuard requireAuth={false}>
+                  <NotFound />
+                </PhoneVerificationGuard>
+              }
+            />
           </Routes>
         </BrowserRouter>
       </AuthProvider>

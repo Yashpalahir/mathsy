@@ -29,8 +29,12 @@ export const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [hoveredPath, setHoveredPath] = useState<string | null>(null);
   const location = useLocation();
-  const { isAuthenticated, user, userType, logout } = useAuth();
+  const { isAuthenticated, user, profile, userType, logout } = useAuth();
   const navigate = useNavigate();
+
+  const isProfileIncomplete = isAuthenticated && 
+    (userType === "student" || userType === "parent") && 
+    (!user?.isProfileComplete || !profile?.isPhoneVerified);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -67,46 +71,48 @@ export const Navbar = () => {
           </motion.div>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center gap-1 bg-muted/20 backdrop-blur-sm p-1 rounded-full">
-            {navLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                onMouseEnter={() => setHoveredPath(link.path)}
-                onMouseLeave={() => setHoveredPath(null)}
-                className={`relative px-4 py-2 rounded-full text-sm font-medium transition-colors duration-300 ${
-                  location.pathname === link.path
-                    ? "text-primary"
-                    : "text-foreground/70 hover:text-primary"
-                }`}
-              >
-                <span className="relative z-10">{link.name}</span>
-                {hoveredPath === link.path && (
-                  <motion.div
-                    layoutId="navbar-hover"
-                    className="absolute inset-0 bg-primary/10 rounded-full -z-0"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                  />
-                )}
-                {location.pathname === link.path && (
-                  <motion.div
-                    layoutId="navbar-active"
-                    className="absolute inset-0 bg-primary/5 rounded-full border border-primary/20 -z-0"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                  />
-                )}
-              </Link>
-            ))}
-          </div>
+          {!isProfileIncomplete && (
+            <div className="hidden lg:flex items-center gap-1 bg-muted/20 backdrop-blur-sm p-1 rounded-full">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  onMouseEnter={() => setHoveredPath(link.path)}
+                  onMouseLeave={() => setHoveredPath(null)}
+                  className={`relative px-4 py-2 rounded-full text-sm font-medium transition-colors duration-300 ${
+                    location.pathname === link.path
+                      ? "text-primary"
+                      : "text-foreground/70 hover:text-primary"
+                  }`}
+                >
+                  <span className="relative z-10">{link.name}</span>
+                  {hoveredPath === link.path && (
+                    <motion.div
+                      layoutId="navbar-hover"
+                      className="absolute inset-0 bg-primary/10 rounded-full -z-0"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                  {location.pathname === link.path && (
+                    <motion.div
+                      layoutId="navbar-active"
+                      className="absolute inset-0 bg-primary/5 rounded-full border border-primary/20 -z-0"
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                </Link>
+              ))}
+            </div>
+          )}
 
           {/* CTA Buttons */}
           <div className="hidden lg:flex items-center gap-3">
             {isAuthenticated ? (
               <>
-                {userType === "admin" && (
+                {!isProfileIncomplete && userType === "admin" && (
                   <Button asChild variant="outline" size="sm" className="rounded-full">
                     <Link to="/admin">
                       <Settings className="w-4 h-4 mr-2" />
@@ -132,16 +138,22 @@ export const Navbar = () => {
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    {userType === "student" && (
+                    {!isProfileIncomplete && userType === "student" && (
                       <DropdownMenuItem onClick={() => navigate("/student-dashboard")} className="cursor-pointer rounded-md">
                         <User className="w-4 h-4 mr-2" />
                         Dashboard
                       </DropdownMenuItem>
                     )}
-                    {userType === "admin" && (
+                    {!isProfileIncomplete && userType === "admin" && (
                       <DropdownMenuItem onClick={() => navigate("/admin")} className="cursor-pointer rounded-md">
                         <Settings className="w-4 h-4 mr-2" />
                         Admin Panel
+                      </DropdownMenuItem>
+                    )}
+                    {isProfileIncomplete && (
+                      <DropdownMenuItem onClick={() => navigate("/create-profile")} className="cursor-pointer rounded-md">
+                        <User className="w-4 h-4 mr-2" />
+                        Complete Profile
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuSeparator />
@@ -186,7 +198,7 @@ export const Navbar = () => {
               className="lg:hidden overflow-hidden"
             >
               <div className="py-6 border-t border-border mt-2 space-y-1">
-                {navLinks.map((link, index) => (
+                {!isProfileIncomplete && navLinks.map((link, index) => (
                   <motion.div
                     key={link.path}
                     initial={{ x: -20, opacity: 0 }}
@@ -215,7 +227,7 @@ export const Navbar = () => {
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: navLinks.length * 0.05 }}
+                  transition={{ delay: isProfileIncomplete ? 0 : navLinks.length * 0.05 }}
                   className="pt-4 px-4"
                 >
                   {isAuthenticated ? (
@@ -229,11 +241,19 @@ export const Navbar = () => {
                           <p className="text-muted-foreground text-xs">{user?.email}</p>
                         </div>
                       </div>
-                      {userType === "admin" && (
+                      {!isProfileIncomplete && userType === "admin" && (
                         <Button asChild variant="outline" className="w-full rounded-xl justify-start">
                           <Link to="/admin" onClick={() => setIsOpen(false)}>
                             <Settings className="w-4 h-4 mr-2" />
                             Admin Panel
+                          </Link>
+                        </Button>
+                      )}
+                      {isProfileIncomplete && (
+                        <Button asChild variant="hero" className="w-full rounded-xl justify-start">
+                          <Link to="/create-profile" onClick={() => setIsOpen(false)}>
+                            <User className="w-4 h-4 mr-2" />
+                            Complete Profile
                           </Link>
                         </Button>
                       )}
