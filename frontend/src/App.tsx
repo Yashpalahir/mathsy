@@ -17,7 +17,6 @@ import ParentDashboard from "./pages/ParentDashboard";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
 import CreateProfile from "./pages/CreateProfile";
-import GoogleAuthCallback from "./pages/GoogleAuthCallback";
 import CourseWatch from "./pages/CourseWatch";
 import EducatorWelcome from "./pages/EducatorWelcome";
 import NotFound from "./pages/NotFound";
@@ -116,7 +115,6 @@ const App = () => (
             />
             <Route path="/admin" element={<Admin />} />
             <Route path="/create-profile" element={<CreateProfile />} />
-            <Route path="/auth/success" element={<GoogleAuthCallback />} />
             <Route path="/educator-welcome" element={<EducatorWelcome />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route

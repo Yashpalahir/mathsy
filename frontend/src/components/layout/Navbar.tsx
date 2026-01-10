@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { motion, AnimatePresence } from "framer-motion";
 import mathsyLogo from "@/assets/mathsy-logo.png";
+import { toast } from "react-toastify";
 
 const navLinks = [
   { name: "Home", path: "/" },
@@ -46,14 +47,15 @@ export const Navbar = () => {
 
   const handleLogout = async () => {
     await logout();
+    toast.success("Logged out successfully");
     navigate("/");
   };
 
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrolled
-          ? "bg-background/80 backdrop-blur-lg border-b border-border/50 py-2 shadow-lg shadow-primary/5"
+        scrolled || isOpen
+          ? "bg-background/95 backdrop-blur-lg border-b border-border/50 py-2 shadow-lg shadow-primary/5"
           : "bg-transparent py-4"
       }`}
     >
@@ -195,7 +197,7 @@ export const Navbar = () => {
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="lg:hidden overflow-hidden"
+              className="lg:hidden overflow-hidden bg-background"
             >
               <div className="py-6 border-t border-border mt-2 space-y-1">
                 {!isProfileIncomplete && navLinks.map((link, index) => (

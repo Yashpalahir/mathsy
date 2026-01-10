@@ -15,6 +15,7 @@ import { useState, useEffect, useRef } from "react";
 import { apiClient } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion, Variants } from "framer-motion";
+import { toast } from "react-toastify";
 import {
   Dialog,
   DialogContent,
@@ -110,6 +111,7 @@ const StudyMaterials = () => {
       }
     } catch (error) {
       console.error("❌ Error fetching study materials:", error);
+      toast.error("Failed to load study materials");
     } finally {
       setLoading(false);
     }
@@ -138,6 +140,7 @@ const StudyMaterials = () => {
       setSelectedPdf(pdfUrl);
     } catch (error) {
       console.error("❌ Failed to load PDF:", error);
+      toast.error("Failed to load PDF. Please try again.");
     }
   };
 
