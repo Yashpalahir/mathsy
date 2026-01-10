@@ -1,12 +1,13 @@
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { useState, useEffect } from "react";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { toast } from "react-toastify";
 import { Loader2, Mail, Lock, ArrowRight, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { z } from "zod";
+import { apiClient } from "@/lib/api";
 
 /* ---------------- ZOD SCHEMAS ---------------- */
 
@@ -29,9 +30,11 @@ const Login = () => {
     isAuthenticated,
     userType: currentUserType,
     isLoading: authLoading,
-    user
+    user,
+    refreshUser
   } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   // Mode: login or signup
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
@@ -51,6 +54,29 @@ const Login = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
+
+  /* ---------------- GOOGLE AUTH CALLBACK HANDLER ---------------- */
+  useEffect(() => {
+    const token = searchParams.get("token");
+    if (token && !isAuthenticated) {
+      handleTokenLogin(token);
+    }
+  }, [searchParams, isAuthenticated]);
+
+  const handleTokenLogin = async (token: string) => {
+    try {
+      setIsLoading(true);
+      apiClient.setToken(token);
+      await refreshUser();
+      toast.success("Logged in successfully");
+    } catch (error) {
+      console.error("Token login failed:", error);
+      toast.error("Authentication failed. Please try again.");
+      apiClient.setToken(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   /* ---------------- AUTH CHECKS ---------------- */
 

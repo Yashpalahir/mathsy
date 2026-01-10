@@ -52,7 +52,7 @@ router.get(
             console.error('❌ [CALLBACK] FRONTEND_URL is not configured');
             return res.status(500).json({ success: false, message: 'Server configuration error' });
         }
-        const redirectUrl = `${frontendUrl}/auth/success?token=${token}`;
+        const redirectUrl = `${frontendUrl}/login?token=${token}`;
         console.log('🔄 [CALLBACK] Redirecting to frontend:', redirectUrl.replace(token, 'TOKEN_HIDDEN'));
         res.redirect(redirectUrl);
     }
