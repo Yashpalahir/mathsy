@@ -68,7 +68,7 @@ export const Navbar = () => {
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
             <Link to="/" className="flex items-center gap-3">
-              <img src={mathsyLogo} alt="Mathsy Logo" className={`transition-all duration-500 ${scrolled ? "h-14" : "h-16"} w-auto`} />
+              <img src={mathsyLogo} alt="Mathsy Logo" className={`transition-all duration-500 ${scrolled ? "h-20" : "h-24"} w-auto`} />
             </Link>
           </motion.div>
 
