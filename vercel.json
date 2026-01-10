@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/auth/success", "destination": "/frontend/dist/index.html" },
+    { "source": "/create-profile", "destination": "/frontend/dist/index.html" },
+    { "source": "/(.*)", "destination": "/frontend/dist/index.html" }
+  ]
+}
