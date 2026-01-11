@@ -1,6 +1,6 @@
 {
   "/Users/ayushpratapsingh/Downloads/mathsy/backend/serverless.yml": {
-    "versionFramework": "4.29.4",
+    "versionFramework": "4.30.0",
     "servicePath": "/Users/ayushpratapsingh/Downloads/mathsy/backend/serverless.yml",
     "serviceConfigFileName": "serverless.yml",
     "service": {
@@ -21,6 +21,7 @@
           "CLOUDINARY_CLOUD_NAME": "dp2n8jqif",
           "CLOUDINARY_API_KEY": "<REDACTED>",
           "CLOUDINARY_API_SECRET": "<REDACTED>",
+          "GEMINI_API_KEY": "<REDACTED>",
           "GOOGLE_CLIENT_ID": "527442118680-mj937n439e2oj6v3eep1a7is5ujumsuu.apps.googleusercontent.com",
           "GOOGLE_CLIENT_SECRET": "<REDACTED>",
           "GOOGLE_REDIRECT_URI": "https://qynclc68i9.execute-api.ap-south-1.amazonaws.com/api/auth/google/callback",
@@ -30,7 +31,7 @@
           "EMAIL_USER": "ayushpratapsingh291@gmail.com",
           "EMAIL_PASS": "hkfm krwn ydup fghr",
           "EMAIL_FROM": "Mathsy",
-          "FRONTEND_URL": "https://mathsy.in",
+          "FRONTEND_URL": "https://www.mathsy.in",
           "ADMIN_PASSWORD": "<REDACTED>"
         },
         "stage": "dev",
@@ -128,7 +129,7 @@
               "Properties": {
                 "Code": {
                   "S3Bucket": "serverless-framework-deployments-ap-south-1-d2a564ab-8a74",
-                  "S3Key": "serverless/mathsy-backend/dev/1767805117221-2026-01-07T16:58:37.221Z/mathsy-backend.zip"
+                  "S3Key": "serverless/mathsy-backend/dev/1768141191922-2026-01-11T14:19:51.922Z/mathsy-backend.zip"
                 },
                 "Handler": "server.handler",
                 "Runtime": "nodejs18.x",
@@ -145,6 +146,7 @@
                     "CLOUDINARY_CLOUD_NAME": "dp2n8jqif",
                     "CLOUDINARY_API_KEY": "<REDACTED>",
                     "CLOUDINARY_API_SECRET": "<REDACTED>",
+                    "GEMINI_API_KEY": "<REDACTED>",
                     "GOOGLE_CLIENT_ID": "527442118680-mj937n439e2oj6v3eep1a7is5ujumsuu.apps.googleusercontent.com",
                     "GOOGLE_CLIENT_SECRET": "<REDACTED>",
                     "GOOGLE_REDIRECT_URI": "https://qynclc68i9.execute-api.ap-south-1.amazonaws.com/api/auth/google/callback",
@@ -154,7 +156,7 @@
                     "EMAIL_USER": "ayushpratapsingh291@gmail.com",
                     "EMAIL_PASS": "hkfm krwn ydup fghr",
                     "EMAIL_FROM": "Mathsy",
-                    "FRONTEND_URL": "https://mathsy.in",
+                    "FRONTEND_URL": "https://www.mathsy.in",
                     "ADMIN_PASSWORD": "<REDACTED>"
                   }
                 },
@@ -169,14 +171,14 @@
                 "AppLogGroup"
               ]
             },
-            "AppLambdaVersionOOiCj6YvJ9coNb11XUKfQ2EKff5wziDWQjuSsQzv6s": {
+            "AppLambdaVersion5E64zHmmmfrxtt9bTRrUR4OxMb48InJO1mOoIekaaJ0": {
               "Type": "AWS::Lambda::Version",
               "DeletionPolicy": "Retain",
               "Properties": {
                 "FunctionName": {
                   "Ref": "AppLambdaFunction"
                 },
-                "CodeSha256": "CPWnBRpZ7/RrpcRow44arLwd2KIWRoq3E+SgGxWkNhQ="
+                "CodeSha256": "t0MVK9/U98dayCeM4Irzeh3aWI+PnetocO5oQYSCUaI="
               }
             },
             "HttpApi": {
@@ -285,7 +287,7 @@
             "AppLambdaFunctionQualifiedArn": {
               "Description": "Current Lambda function version",
               "Value": {
-                "Ref": "AppLambdaVersionOOiCj6YvJ9coNb11XUKfQ2EKff5wziDWQjuSsQzv6s"
+                "Ref": "AppLambdaVersion5E64zHmmmfrxtt9bTRrUR4OxMb48InJO1mOoIekaaJ0"
               },
               "Export": {
                 "Name": "sls-mathsy-backend-dev-AppLambdaFunctionQualifiedArn"
@@ -344,7 +346,7 @@
           "timeout": 12,
           "runtime": "nodejs18.x",
           "vpc": {},
-          "versionLogicalId": "AppLambdaVersionOOiCj6YvJ9coNb11XUKfQ2EKff5wziDWQjuSsQzv6s"
+          "versionLogicalId": "AppLambdaVersion5E64zHmmmfrxtt9bTRrUR4OxMb48InJO1mOoIekaaJ0"
         }
       },
       "package": {
@@ -358,7 +360,7 @@
         "artifactsS3KeyDirname": "serverless/mathsy-backend/dev/code-artifacts",
         "deploymentBucket": "serverless-framework-deployments-ap-south-1-d2a564ab-8a74",
         "artifact": "/Users/ayushpratapsingh/Downloads/mathsy/backend/.serverless/mathsy-backend.zip",
-        "artifactDirectoryName": "serverless/mathsy-backend/dev/1767805117221-2026-01-07T16:58:37.221Z"
+        "artifactDirectoryName": "serverless/mathsy-backend/dev/1768141191922-2026-01-11T14:19:51.922Z"
       }
     },
     "provider": {
@@ -377,6 +379,7 @@
         "CLOUDINARY_CLOUD_NAME": "dp2n8jqif",
         "CLOUDINARY_API_KEY": "<REDACTED>",
         "CLOUDINARY_API_SECRET": "<REDACTED>",
+        "GEMINI_API_KEY": "<REDACTED>",
         "GOOGLE_CLIENT_ID": "527442118680-mj937n439e2oj6v3eep1a7is5ujumsuu.apps.googleusercontent.com",
         "GOOGLE_CLIENT_SECRET": "<REDACTED>",
         "GOOGLE_REDIRECT_URI": "https://qynclc68i9.execute-api.ap-south-1.amazonaws.com/api/auth/google/callback",
@@ -386,7 +389,7 @@
         "EMAIL_USER": "ayushpratapsingh291@gmail.com",
         "EMAIL_PASS": "hkfm krwn ydup fghr",
         "EMAIL_FROM": "Mathsy",
-        "FRONTEND_URL": "https://mathsy.in",
+        "FRONTEND_URL": "https://www.mathsy.in",
         "ADMIN_PASSWORD": "<REDACTED>"
       },
       "stage": "dev",
@@ -484,7 +487,7 @@
             "Properties": {
               "Code": {
                 "S3Bucket": "serverless-framework-deployments-ap-south-1-d2a564ab-8a74",
-                "S3Key": "serverless/mathsy-backend/dev/1767805117221-2026-01-07T16:58:37.221Z/mathsy-backend.zip"
+                "S3Key": "serverless/mathsy-backend/dev/1768141191922-2026-01-11T14:19:51.922Z/mathsy-backend.zip"
               },
               "Handler": "server.handler",
               "Runtime": "nodejs18.x",
@@ -501,6 +504,7 @@
                   "CLOUDINARY_CLOUD_NAME": "dp2n8jqif",
                   "CLOUDINARY_API_KEY": "<REDACTED>",
                   "CLOUDINARY_API_SECRET": "<REDACTED>",
+                  "GEMINI_API_KEY": "<REDACTED>",
                   "GOOGLE_CLIENT_ID": "527442118680-mj937n439e2oj6v3eep1a7is5ujumsuu.apps.googleusercontent.com",
                   "GOOGLE_CLIENT_SECRET": "<REDACTED>",
                   "GOOGLE_REDIRECT_URI": "https://qynclc68i9.execute-api.ap-south-1.amazonaws.com/api/auth/google/callback",
@@ -510,7 +514,7 @@
                   "EMAIL_USER": "ayushpratapsingh291@gmail.com",
                   "EMAIL_PASS": "hkfm krwn ydup fghr",
                   "EMAIL_FROM": "Mathsy",
-                  "FRONTEND_URL": "https://mathsy.in",
+                  "FRONTEND_URL": "https://www.mathsy.in",
                   "ADMIN_PASSWORD": "<REDACTED>"
                 }
               },
@@ -525,14 +529,14 @@
               "AppLogGroup"
             ]
           },
-          "AppLambdaVersionOOiCj6YvJ9coNb11XUKfQ2EKff5wziDWQjuSsQzv6s": {
+          "AppLambdaVersion5E64zHmmmfrxtt9bTRrUR4OxMb48InJO1mOoIekaaJ0": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "AppLambdaFunction"
               },
-              "CodeSha256": "CPWnBRpZ7/RrpcRow44arLwd2KIWRoq3E+SgGxWkNhQ="
+              "CodeSha256": "t0MVK9/U98dayCeM4Irzeh3aWI+PnetocO5oQYSCUaI="
             }
           },
           "HttpApi": {
@@ -641,7 +645,7 @@
           "AppLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "AppLambdaVersionOOiCj6YvJ9coNb11XUKfQ2EKff5wziDWQjuSsQzv6s"
+              "Ref": "AppLambdaVersion5E64zHmmmfrxtt9bTRrUR4OxMb48InJO1mOoIekaaJ0"
             },
             "Export": {
               "Name": "sls-mathsy-backend-dev-AppLambdaFunctionQualifiedArn"
@@ -694,7 +698,7 @@
       "serviceProvider": null,
       "instanceParameters": null
     },
-    "serviceRawFile": "service: mathsy-backend\n\nprovider:\n  name: aws\n  runtime: nodejs18.x\n  region: ap-south-1\n  profile: default  # Mumbai region\n  memorySize: 1024     # Faster CPU, fewer cold starts\n  timeout: 12          # Good for image uploads, Razorpay\n  environment:\n    NODE_ENV: production\n\n    # Database\n    MONGODB_URI: ${env:MONGODB_URI}\n    PORT: ${env:PORT}\n    JWT_SECRET: ${env:JWT_SECRET}\n    JWT_EXPIRE: ${env:JWT_EXPIRE}\n    # Cloudinary\n    CLOUDINARY_CLOUD_NAME: ${env:CLOUDINARY_CLOUD_NAME}\n    CLOUDINARY_API_KEY: ${env:CLOUDINARY_API_KEY}\n    CLOUDINARY_API_SECRET: ${env:CLOUDINARY_API_SECRET}\n\n    # Google OAuth\n    GOOGLE_CLIENT_ID: ${env:GOOGLE_CLIENT_ID}\n    GOOGLE_CLIENT_SECRET: ${env:GOOGLE_CLIENT_SECRET}\n    GOOGLE_REDIRECT_URI: ${env:GOOGLE_REDIRECT_URI}\n\n    # Razorpay\n    RAZORPAY_KEY_ID: ${env:RAZORPAY_KEY_ID}\n    RAZORPAY_KEY_SECRET: ${env:RAZORPAY_KEY_SECRET}\n\n    # Emails\n    EMAIL_SERVICE: ${env:EMAIL_SERVICE}\n    EMAIL_USER: ${env:EMAIL_USER}\n    EMAIL_PASS: ${env:EMAIL_PASS}\n    EMAIL_FROM: ${env:EMAIL_FROM}\n\n    # Misc\n    FRONTEND_URL: ${env:FRONTEND_URL}\n    ADMIN_PASSWORD: ${env:ADMIN_PASSWORD}\n\nfunctions:\n  app:\n    handler: server.handler        # <— matches your server.js export\n    events:\n      - httpApi: '*'               # Fastest API Gateway type\n\npackage:\n  patterns:\n    - \"!uploads/**\"                # No local uploads for Lambda\n    - \"!node_modules/.cache/**\"\n    - \"!*.md\"\n    - \"!*.log\"\n    - \"!README*\"\n",
+    "serviceRawFile": "service: mathsy-backend\n\nprovider:\n  name: aws\n  runtime: nodejs18.x\n  region: ap-south-1\n  profile: default  # Mumbai region\n  memorySize: 1024     # Faster CPU, fewer cold starts\n  timeout: 12          # Good for image uploads, Razorpay\n  environment:\n    NODE_ENV: production\n\n    # Database\n    MONGODB_URI: ${env:MONGODB_URI}\n    PORT: ${env:PORT}\n    JWT_SECRET: ${env:JWT_SECRET}\n    JWT_EXPIRE: ${env:JWT_EXPIRE}\n    # Cloudinary\n    CLOUDINARY_CLOUD_NAME: ${env:CLOUDINARY_CLOUD_NAME}\n    CLOUDINARY_API_KEY: ${env:CLOUDINARY_API_KEY}\n    CLOUDINARY_API_SECRET: ${env:CLOUDINARY_API_SECRET}\n\n    # Google ai\n    GEMINI_API_KEY: ${env:GEMINI_API_KEY}\n\n    GOOGLE_CLIENT_ID: ${env:GOOGLE_CLIENT_ID}\n    GOOGLE_CLIENT_SECRET: ${env:GOOGLE_CLIENT_SECRET}\n    GOOGLE_REDIRECT_URI: ${env:GOOGLE_REDIRECT_URI}\n\n    # Razorpay\n    RAZORPAY_KEY_ID: ${env:RAZORPAY_KEY_ID}\n    RAZORPAY_KEY_SECRET: ${env:RAZORPAY_KEY_SECRET}\n\n    # Emails\n    EMAIL_SERVICE: ${env:EMAIL_SERVICE}\n    EMAIL_USER: ${env:EMAIL_USER}\n    EMAIL_PASS: ${env:EMAIL_PASS}\n    EMAIL_FROM: ${env:EMAIL_FROM}\n\n    # Misc\n    FRONTEND_URL: ${env:FRONTEND_URL}\n    ADMIN_PASSWORD: ${env:ADMIN_PASSWORD}\n\nfunctions:\n  app:\n    handler: server.handler        # <— matches your server.js export\n    events:\n      - httpApi: '*'               # Fastest API Gateway type\n\npackage:\n  patterns:\n    - \"!uploads/**\"                # No local uploads for Lambda\n    - \"!node_modules/.cache/**\"\n    - \"!*.md\"\n    - \"!*.log\"\n    - \"!README*\"\n",
     "command": [
       "deploy"
     ],
@@ -707,12 +711,12 @@
     "serviceProviderAwsCfStackName": "mathsy-backend-dev",
     "serviceProviderAwsCfStackId": "arn:aws:cloudformation:ap-south-1:913524912216:stack/mathsy-backend-dev/79b208b0-ebc9-11f0-ba5a-0adba345cbff",
     "serviceProviderAwsCfStackCreated": "2026-01-07T13:05:01.782Z",
-    "serviceProviderAwsCfStackUpdated": "2026-01-07T16:45:32.529Z",
+    "serviceProviderAwsCfStackUpdated": "2026-01-11T14:14:29.040Z",
     "serviceProviderAwsCfStackStatus": "UPDATE_COMPLETE",
     "serviceProviderAwsCfStackOutputs": [
       {
         "OutputKey": "AppLambdaFunctionQualifiedArn",
-        "OutputValue": "arn:aws:lambda:ap-south-1:913524912216:function:mathsy-backend-dev-app:4",
+        "OutputValue": "arn:aws:lambda:ap-south-1:913524912216:function:mathsy-backend-dev-app:19",
         "Description": "Current Lambda function version",
         "ExportName": "sls-mathsy-backend-dev-AppLambdaFunctionQualifiedArn"
       },
@@ -827,7 +831,7 @@
           "Properties": {
             "Code": {
               "S3Bucket": "serverless-framework-deployments-ap-south-1-d2a564ab-8a74",
-              "S3Key": "serverless/mathsy-backend/dev/1767805117221-2026-01-07T16:58:37.221Z/mathsy-backend.zip"
+              "S3Key": "serverless/mathsy-backend/dev/1768141191922-2026-01-11T14:19:51.922Z/mathsy-backend.zip"
             },
             "Handler": "server.handler",
             "Runtime": "nodejs18.x",
@@ -844,6 +848,7 @@
                 "CLOUDINARY_CLOUD_NAME": "dp2n8jqif",
                 "CLOUDINARY_API_KEY": "<REDACTED>",
                 "CLOUDINARY_API_SECRET": "<REDACTED>",
+                "GEMINI_API_KEY": "<REDACTED>",
                 "GOOGLE_CLIENT_ID": "527442118680-mj937n439e2oj6v3eep1a7is5ujumsuu.apps.googleusercontent.com",
                 "GOOGLE_CLIENT_SECRET": "<REDACTED>",
                 "GOOGLE_REDIRECT_URI": "https://qynclc68i9.execute-api.ap-south-1.amazonaws.com/api/auth/google/callback",
@@ -853,7 +858,7 @@
                 "EMAIL_USER": "ayushpratapsingh291@gmail.com",
                 "EMAIL_PASS": "hkfm krwn ydup fghr",
                 "EMAIL_FROM": "Mathsy",
-                "FRONTEND_URL": "https://mathsy.in",
+                "FRONTEND_URL": "https://www.mathsy.in",
                 "ADMIN_PASSWORD": "<REDACTED>"
               }
             },
@@ -868,14 +873,14 @@
             "AppLogGroup"
           ]
         },
-        "AppLambdaVersionOOiCj6YvJ9coNb11XUKfQ2EKff5wziDWQjuSsQzv6s": {
+        "AppLambdaVersion5E64zHmmmfrxtt9bTRrUR4OxMb48InJO1mOoIekaaJ0": {
           "Type": "AWS::Lambda::Version",
           "DeletionPolicy": "Retain",
           "Properties": {
             "FunctionName": {
               "Ref": "AppLambdaFunction"
             },
-            "CodeSha256": "CPWnBRpZ7/RrpcRow44arLwd2KIWRoq3E+SgGxWkNhQ="
+            "CodeSha256": "t0MVK9/U98dayCeM4Irzeh3aWI+PnetocO5oQYSCUaI="
           }
         },
         "HttpApi": {
@@ -984,7 +989,7 @@
         "AppLambdaFunctionQualifiedArn": {
           "Description": "Current Lambda function version",
           "Value": {
-            "Ref": "AppLambdaVersionOOiCj6YvJ9coNb11XUKfQ2EKff5wziDWQjuSsQzv6s"
+            "Ref": "AppLambdaVersion5E64zHmmmfrxtt9bTRrUR4OxMb48InJO1mOoIekaaJ0"
           },
           "Export": {
             "Name": "sls-mathsy-backend-dev-AppLambdaFunctionQualifiedArn"

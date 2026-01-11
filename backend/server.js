@@ -16,9 +16,6 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-/* ---------------------------------
-   🔥 Lambda-Optimized Mongo Connect
------------------------------------ */
 app.use(async (req, res, next) => {
   await connectDB(); // reuses connection in Lambda
   next();
@@ -33,8 +30,6 @@ app.use(cors({
   credentials: true,
 }));
 
-app.use(passport.initialize());
-
 /* Avoid JSON parsing for multipart requests */
 app.use((req, res, next) => {
   const contentType = (req.headers['content-type'] || '').toLowerCase();
@@ -46,19 +41,6 @@ app.use((req, res, next) => {
 
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-/* ---------------------------------
-   ❌ REMOVED LOCAL UPLOADS STATIC FOLDER
-   Because Cloudinary is used
------------------------------------ */
-
-/* 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-REMOVED 🚫
-*/
-
-/* ---------------------------------
-   📦 All Routes
------------------------------------ */
 import authRoutes from './routes/authRoutes.js';
 import courseRoutes from './routes/courseRoutes.js';
 import enrollmentRoutes from './routes/enrollmentRoutes.js';

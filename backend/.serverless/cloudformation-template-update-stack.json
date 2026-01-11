@@ -91,7 +91,7 @@
       "Properties": {
         "Code": {
           "S3Bucket": "serverless-framework-deployments-ap-south-1-d2a564ab-8a74",
-          "S3Key": "serverless/mathsy-backend/dev/1767805117221-2026-01-07T16:58:37.221Z/mathsy-backend.zip"
+          "S3Key": "serverless/mathsy-backend/dev/1768141191922-2026-01-11T14:19:51.922Z/mathsy-backend.zip"
         },
         "Handler": "server.handler",
         "Runtime": "nodejs18.x",
@@ -108,6 +108,7 @@
             "CLOUDINARY_CLOUD_NAME": "dp2n8jqif",
             "CLOUDINARY_API_KEY": "128214393778815",
             "CLOUDINARY_API_SECRET": "4uf4uNumfpEWSkgnV5zMIikB3rg",
+            "GEMINI_API_KEY": "AIzaSyDxdEc8PtDnZbDCR3XTVoetrFYM0kLrRcY",
             "GOOGLE_CLIENT_ID": "527442118680-mj937n439e2oj6v3eep1a7is5ujumsuu.apps.googleusercontent.com",
             "GOOGLE_CLIENT_SECRET": "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",
             "GOOGLE_REDIRECT_URI": "https://qynclc68i9.execute-api.ap-south-1.amazonaws.com/api/auth/google/callback",
@@ -117,8 +118,8 @@
             "EMAIL_USER": "ayushpratapsingh291@gmail.com",
             "EMAIL_PASS": "hkfm krwn ydup fghr",
             "EMAIL_FROM": "Mathsy",
-            "FRONTEND_URL": "https://mathsy.in",
-            "ADMIN_PASSWORD": "MySecret123"
+            "FRONTEND_URL": "https://www.mathsy.in",
+            "ADMIN_PASSWORD": "GDwshwq1248av5462%bfsDt"
           }
         },
         "Role": {
@@ -132,14 +133,14 @@
         "AppLogGroup"
       ]
     },
-    "AppLambdaVersionOOiCj6YvJ9coNb11XUKfQ2EKff5wziDWQjuSsQzv6s": {
+    "AppLambdaVersion5E64zHmmmfrxtt9bTRrUR4OxMb48InJO1mOoIekaaJ0": {
       "Type": "AWS::Lambda::Version",
       "DeletionPolicy": "Retain",
       "Properties": {
         "FunctionName": {
           "Ref": "AppLambdaFunction"
         },
-        "CodeSha256": "CPWnBRpZ7/RrpcRow44arLwd2KIWRoq3E+SgGxWkNhQ="
+        "CodeSha256": "t0MVK9/U98dayCeM4Irzeh3aWI+PnetocO5oQYSCUaI="
       }
     },
     "HttpApi": {
@@ -248,7 +249,7 @@
     "AppLambdaFunctionQualifiedArn": {
       "Description": "Current Lambda function version",
       "Value": {
-        "Ref": "AppLambdaVersionOOiCj6YvJ9coNb11XUKfQ2EKff5wziDWQjuSsQzv6s"
+        "Ref": "AppLambdaVersion5E64zHmmmfrxtt9bTRrUR4OxMb48InJO1mOoIekaaJ0"
       },
       "Export": {
         "Name": "sls-mathsy-backend-dev-AppLambdaFunctionQualifiedArn"

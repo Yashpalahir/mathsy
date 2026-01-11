@@ -1,445 +1,53 @@
+// ======================================================
+// CLEAN BACKEND — ONLY WHAT FRONTEND CURRENTLY USES
+// PHONE OTP LOGIN + GET USER + PROFILE COMPLETION
+// ADMIN LOGIN + EDUCATOR LOGIN
+// ======================================================
+
 import User from '../models/User.js';
 import Profile from '../models/Profile.js';
 import Otp from '../models/Otp.js';
 import Educator from '../models/Educator.js';
 import generateToken from '../utils/generateToken.js';
-import sendEmail from '../utils/sendEmail.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
+
+// ------------------ ADMIN CREDENTIALS ------------------
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@mathsy.com';
 const ADMIN_NAME = process.env.ADMIN_NAME || 'Admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin';
 
-if (!ADMIN_EMAIL || !ADMIN_NAME || !ADMIN_PASSWORD) {
-  console.warn("⚠️ Admin credentials are not fully configured in environment variables.");
-}
+// ==============================================================
+// 1️⃣  VERIFY PHONE OTP → LOGIN OR CREATE NEW USER
+//     Used in frontend Login.js:
+//     apiClient.verifyPhoneOtp(phone, "", true)
+// ==============================================================
 
-// @desc    Register a new user
-// @route   POST /api/auth/register
-// @access  Public
-export const register = async (req, res) => {
-  try {
-    const { name, email, password, role, phone, otp, studentClass } = req.body;
-
-    // Validation
-    if (!name || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide name, email, and password',
-      });
-    }
-
-    // Validate studentClass if provided (Class 6-10)
-    const validClasses = ['Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'];
-    if (studentClass && !validClasses.includes(studentClass)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid class selection. Please select a class from 6 to 10.',
-      });
-    }
-
-    // Verify OTP if provided (Highly recommended to enforce)
-    if (otp) {
-      const validOtp = await Otp.findOne({ email, otp });
-      if (!validOtp) {
-        return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
-      }
-      // Delete OTP after usage
-      await Otp.findOneAndDelete({ email, otp });
-    } else {
-      // NOTE: For security, you should enforce OTP here.
-      // return res.status(400).json({ success: false, message: 'OTP is required' });
-    }
-
-    // Check if user exists
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      return res.status(400).json({
-        success: false,
-        message: 'User already exists',
-      });
-    }
-
-    // Create user
-    const user = await User.create({
-      name,
-      email,
-      password,
-      role: role || 'student',
-      phone,
-      studentClass: studentClass || undefined,
-    });
-
-    // Generate token
-    const token = generateToken(user._id);
-
-    res.status(201).json({
-      success: true,
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        phone: user.phone,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Server error',
-    });
-  }
-};
-
-// @desc    Login user
-// @route   POST /api/auth/login
-// @access  Public
-export const login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    // Validation
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide email and password',
-      });
-    }
-
-    // Check for user
-    const user = await User.findOne({ email }).select('+password');
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials',
-      });
-    }
-
-    // Check if password matches
-    const isMatch = await user.matchPassword(password);
-    if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials',
-      });
-    }
-
-    // Generate token
-    const token = generateToken(user._id);
-
-    res.status(200).json({
-      success: true,
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        phone: user.phone,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Server error',
-    });
-  }
-};
-
-// @desc    Get current logged in user
-// @route   GET /api/auth/me
-// @access  Private
-export const getMe = async (req, res) => {
-  try {
-    let user = await User.findById(req.user.id).populate('profile');
-
-    if (!user) {
-      user = await Educator.findById(req.user.id);
-    }
-
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
-    }
-
-    console.log('👤 [GET ME] Fetching data for:', user.email);
-    console.log('👤 [GET ME] Role:', user.role);
-
-    res.status(200).json({
-      success: true,
-      user: {
-        id: user._id,
-        name: user.name || 'Educator',
-        email: user.email,
-        role: user.role,
-        isProfileComplete: user.isProfileComplete || (user.role === 'educator'),
-        profile: user.profile || null,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Server error',
-    });
-  }
-};
-
-// @desc    Render simple admin login page
-// @route   GET /api/admin
-// @access  Public (password protected in POST)
-export const renderAdminLogin = (req, res) => {
-  res.send(`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Admin Login</title>
-        <style>
-          body { font-family: Arial, sans-serif; background: #f4f4f4; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-          .card { background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); width: 360px; }
-          h1 { margin-top: 0; font-size: 20px; }
-          input { width: 100%; padding: 10px; margin: 12px 0; border-radius: 4px; border: 1px solid #ccc; }
-          button { width: 100%; padding: 10px; background: #2563eb; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
-          button:disabled { opacity: 0.6; cursor: not-allowed; }
-          .message { margin-top: 12px; font-size: 14px; }
-          .success { color: #16a34a; }
-          .error { color: #dc2626; }
-          pre { background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 4px; overflow-x: auto; }
-        </style>
-      </head>
-      <body>
-        <div class="card">
-          <h1>Admin Login</h1>
-          <p>Enter the admin password to get a JWT token.</p>
-          <form id="admin-form">
-            <input type="password" id="password" name="password" placeholder="Password" required />
-            <button type="submit">Login</button>
-            <div class="message" id="message"></div>
-            <div id="token-container" style="display:none;">
-              <p class="success">Success! Here is your token:</p>
-              <pre id="token"></pre>
-              <p class="message">Use this token as Bearer in Authorization header for admin APIs.</p>
-            </div>
-          </form>
-        </div>
-        <script>
-          const form = document.getElementById('admin-form');
-          const messageEl = document.getElementById('message');
-          const tokenBox = document.getElementById('token-container');
-          const tokenPre = document.getElementById('token');
-          form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            messageEl.textContent = '';
-            tokenBox.style.display = 'none';
-            const password = document.getElementById('password').value;
-            const btn = form.querySelector('button');
-            btn.disabled = true;
-            try {
-              const res = await fetch('/api/admin/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password })
-              });
-              const data = await res.json();
-              if (!res.ok || !data.success) {
-                throw new Error(data.message || 'Login failed');
-              }
-              tokenPre.textContent = data.token;
-              tokenBox.style.display = 'block';
-              messageEl.textContent = '';
-            } catch (err) {
-              messageEl.textContent = err.message || 'Login failed';
-              messageEl.className = 'message error';
-            } finally {
-              btn.disabled = false;
-            }
-          });
-        </script>
-      </body>
-    </html>
-  `);
-};
-
-// @desc    Admin password login -> returns JWT
-// @route   POST /api/admin/login
-// @access  Public (password protected)
-export const adminLogin = async (req, res) => {
-  try {
-    const { password } = req.body;
-
-    if (!password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Password is required',
-      });
-    }
-
-    if (password !== ADMIN_PASSWORD) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid admin password',
-      });
-    }
-
-    let adminUser = await User.findOne({ email: ADMIN_EMAIL });
-    if (!adminUser) {
-      adminUser = await User.create({
-        name: ADMIN_NAME,
-        email: ADMIN_EMAIL,
-        password: ADMIN_PASSWORD,
-        role: 'admin',
-      });
-    }
-
-    const token = generateToken(adminUser._id);
-
-    res.status(200).json({
-      success: true,
-      token,
-      user: {
-        id: adminUser._id,
-        name: adminUser.name,
-        email: adminUser.email,
-        role: adminUser.role,
-        phone: adminUser.phone,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Server error',
-    });
-  }
-};
-
-// @desc    Send OTP to email
-// @route   POST /api/auth/send-otp
-// @access  Public
-export const sendOtp = async (req, res) => {
-  try {
-    const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ success: false, message: 'Please provide an email' });
-    }
-
-    // Generate 6 digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // Store OTP in separate collection
-    await Otp.findOneAndUpdate(
-      { email },
-      { otp },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
-
-    // Send email
-    const message = `Your OTP for Mathsy login/signup is: ${otp}. It expires in 10 minutes.`;
-
-    try {
-      await sendEmail({
-        email,
-        subject: 'Mathsy OTP Verification',
-        message: message,
-        html: `<h1>Mathsy OTP Verification</h1><p>${message}</p>`
-      });
-
-      res.status(200).json({
-        success: true,
-        message: `OTP sent to ${email}`,
-      });
-    } catch (err) {
-      return res.status(500).json({ success: false, message: 'Email could not be sent' });
-    }
-
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// @desc    Verify OTP (without login or creation)
-// @route   POST /api/auth/verify-otp
-// @access  Public
-export const verifyOtp = async (req, res) => {
-  try {
-    const { email, otp } = req.body;
-    if (!email || !otp) {
-      return res.status(400).json({ success: false, message: 'Provide email and OTP' });
-    }
-
-    const validOtp = await Otp.findOne({ email, otp });
-
-    if (validOtp) {
-      res.status(200).json({ success: true, message: 'OTP Verified' });
-    } else {
-      res.status(400).json({ success: false, message: 'Invalid OTP' });
-    }
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// @desc    Send OTP to Phone
-// @route   POST /api/auth/send-phone-otp
-// @access  Public
-export const sendPhoneOtp = async (req, res) => {
-  try {
-    const { phone } = req.body;
-    if (!phone) {
-      return res.status(400).json({ success: false, message: 'Please provide a phone number' });
-    }
-
-    // Generate 6 digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // Store OTP in separate collection
-    await Otp.findOneAndUpdate(
-      { phone },
-      { otp },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
-
-    // MOCK: In a real app, send OTP via SMS service (e.g. Twilio, Firebase)
-    console.log(`📱 [PHONE OTP] Sent ${otp} to ${phone}`);
-
-    res.status(200).json({
-      success: true,
-      message: `OTP sent to ${phone}`,
-      otp: process.env.NODE_ENV === 'development' ? otp : undefined // Return OTP in dev for testing
-    });
-
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// @desc    Verify Phone OTP and Login/Signup
-// @route   POST /api/auth/verify-phone-otp
-// @access  Public
 export const verifyPhoneOtp = async (req, res) => {
   try {
     const { phone, otp, isFirebaseVerified } = req.body;
+
+    // Require phone
     if (!phone || (!otp && !isFirebaseVerified)) {
       return res.status(400).json({ success: false, message: 'Provide phone and OTP' });
     }
 
+    // If Firebase verified = true → skip backend OTP check
     if (!isFirebaseVerified) {
       const validOtp = await Otp.findOne({ phone, otp });
       if (!validOtp) {
         return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
       }
-      // Clear OTP from collection
       await Otp.findOneAndDelete({ phone });
     }
 
-    // Now check if User exists.
+    // Check if user exists by phone
     let user = await User.findOne({ phone });
 
+    // If new user → create minimal user
     if (!user) {
-      // Create a temporary user or handle as "needs profile"
-      // For now, let's create a partial user and return a token
       user = await User.create({
         phone,
         role: 'student',
@@ -458,7 +66,9 @@ export const verifyPhoneOtp = async (req, res) => {
         role: user.role,
         isProfileComplete: user.isProfileComplete,
       },
-      message: user.isProfileComplete ? 'Login successful' : 'OTP Verified, please complete your profile',
+      message: user.isProfileComplete
+        ? 'Login successful'
+        : 'OTP Verified. Please complete your profile.',
     });
 
   } catch (error) {
@@ -466,115 +76,41 @@ export const verifyPhoneOtp = async (req, res) => {
   }
 };
 
-// @desc    Login or Verify with OTP
-// @route   POST /api/auth/login-otp
-// @access  Public
-export const loginWithOtp = async (req, res) => {
+// ==============================================================
+// 2️⃣  GET LOGGED-IN USER INFO
+//     Used in AuthContext refreshUser()
+// ==============================================================
+
+export const getMe = async (req, res) => {
   try {
-    const { email, otp } = req.body;
-    if (!email || !otp) {
-      return res.status(400).json({ success: false, message: 'Provide email and OTP' });
-    }
-
-    // 1. Verify OTP from Otp collection
-    const validOtp = await Otp.findOne({ email, otp });
-
-    // 2. Check if user acts (for legacy or just validation if we kept logic there, but now we use Otp model)
-    // Actually, we should check invalid OTP first.
-    if (!validOtp) {
-      // Check legacy user field just in case? No, let's stick to new model logic for consistency.
-      // Or if verified via User model (old way)?
-      // Let's assume we migrated fully.
-      return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
-    }
-
-    // OTP is valid. Now check if User exists.
-    let user = await User.findOne({ email });
+    let user = await User.findById(req.user.id).populate('profile');
 
     if (!user) {
-      // New User -> Return success but no token (frontend should redirect to Signup details)
-      return res.status(200).json({
-        success: true,
-        message: 'OTP Verified',
-        isNewUser: true,
-        // No token yet, because they need to register
-      });
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
-
-    // Existing User -> Login
-    // Clear OTP from collection
-    await Otp.findOneAndDelete({ email });
-
-    const token = generateToken(user._id);
 
     res.status(200).json({
       success: true,
-      token,
       user: {
         id: user._id,
-        name: user.name,
+        name: user.name || '',
         email: user.email,
+        phone: user.phone,
         role: user.role,
         isProfileComplete: user.isProfileComplete,
+        profile: user.profile || null,
       },
-      isNewUser: false,
     });
-
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc    Google Auth (Mocked for now)
-// @route   POST /api/auth/google
-// @access  Public
-export const googleAuth = async (req, res) => {
-  try {
-    const { email, name, googleId, photo } = req.body; // In real app, verify ID token
+// ==============================================================
+// 3️⃣  COMPLETE PROFILE (NAME, CLASS, AVATAR, LOCATION)
+//     Used in Login.js (Step 3)
+// ==============================================================
 
-    // MOCK VERIFICATION: We accept the data sent from frontend for now.
-
-    let user = await User.findOne({ email });
-    if (!user) {
-      user = await User.create({
-        email,
-        name,
-        googleId,
-        avatar: photo,
-        role: 'student',
-        isProfileComplete: false,
-      });
-    } else {
-      // Update googleId if missing
-      if (!user.googleId) {
-        user.googleId = googleId;
-        await user.save({ validateBeforeSave: false });
-      }
-    }
-
-    const token = generateToken(user._id);
-
-    res.status(200).json({
-      success: true,
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        isProfileComplete: user.isProfileComplete,
-        avatar: user.avatar,
-      },
-    });
-
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// @desc    Complete Profile
-// @route   PUT /api/auth/complete-profile
-// @access  Private
 export const completeProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -584,16 +120,16 @@ export const completeProfile = async (req, res) => {
 
     const { name, studentClass, location } = req.body;
 
-    // Update User model directly as requested
+    // Update basic fields
     if (name) user.name = name;
     if (studentClass) user.studentClass = studentClass;
 
-    // location is passed as { latitude, longitude }
+    // Parse location (string or object)
     if (location) {
       user.location = typeof location === 'string' ? JSON.parse(location) : location;
     }
 
-    // Handle avatar upload if present (via Multer-Cloudinary)
+    // Avatar handling (Multer + Cloudinary)
     if (req.file) {
       user.avatar = req.file.path;
     }
@@ -601,15 +137,14 @@ export const completeProfile = async (req, res) => {
     user.isProfileComplete = true;
     await user.save();
 
-    // Also update Profile model for compatibility if it exists
+    // Optional: also update Profile model for compatibility
     let profile = await Profile.findOne({ user: user._id });
-    if (!profile) {
-      profile = new Profile({ user: user._id });
-    }
-    if (name) profile.username = name; // Mapping name to username in Profile
-    if (studentClass) profile.studentClass = studentClass;
+    if (!profile) profile = new Profile({ user: user._id });
+
+    profile.username = name;
+    profile.studentClass = studentClass;
     if (req.file) profile.avatar = req.file.path;
-    profile.isPhoneVerified = true; // Since they logged in via phone
+    profile.isPhoneVerified = true;
     await profile.save();
 
     res.status(200).json({
@@ -631,33 +166,61 @@ export const completeProfile = async (req, res) => {
   }
 };
 
-// @desc    Send OTP to Phone (Handled by Firebase on frontend)
-// @route   POST /api/auth/send-whatsapp-otp
-// @access  Private
-export const sendWhatsAppOtp = async (req, res) => {
+// ==============================================================
+// 4️⃣  ADMIN LOGIN PAGE (used by browser, not frontend React)
+// ==============================================================
+
+export const renderAdminLogin = (req, res) => {
+  res.send(`
+    <html>
+      <body>
+        <h2>Admin Login</h2>
+        <form method="POST" action="/api/admin/login">
+          <input type="password" name="password" placeholder="Password" required />
+          <button type="submit">Login</button>
+        </form>
+      </body>
+    </html>
+  `);
+};
+
+// ==============================================================
+// 5️⃣  ADMIN LOGIN (simple password → JWT)
+// ==============================================================
+
+export const adminLogin = async (req, res) => {
   try {
-    const { phone } = req.body;
-    if (!phone) {
-      return res.status(400).json({ success: false, message: 'Please provide a phone number' });
+    const { password } = req.body;
+
+    if (password !== ADMIN_PASSWORD) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid admin password',
+      });
     }
 
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+    // Make sure admin user exists
+    let adminUser = await User.findOne({ email: ADMIN_EMAIL });
+    if (!adminUser) {
+      adminUser = await User.create({
+        name: ADMIN_NAME,
+        email: ADMIN_EMAIL,
+        password: ADMIN_PASSWORD,
+        role: 'admin',
+      });
     }
 
-    // Update phone in Profile
-    let profile = await Profile.findOne({ user: user._id });
-    if (!profile) {
-      profile = new Profile({ user: user._id, phone });
-    } else {
-      profile.phone = phone;
-    }
-    await profile.save();
+    const token = generateToken(adminUser._id);
 
     res.status(200).json({
       success: true,
-      message: `Phone number updated. OTP should be handled by frontend via Firebase.`,
+      token,
+      user: {
+        id: adminUser._id,
+        name: adminUser.name,
+        email: adminUser.email,
+        role: adminUser.role,
+      },
     });
 
   } catch (error) {
@@ -665,38 +228,67 @@ export const sendWhatsAppOtp = async (req, res) => {
   }
 };
 
-// @desc    Verify Phone (Acknowledge Firebase verification)
-// @route   POST /api/auth/verify-whatsapp-otp
-// @access  Private
-export const verifyWhatsAppOtp = async (req, res) => {
+// ==============================================================
+// 6️⃣  EDUCATOR LOGIN (email + password)
+//     Used when educator logs in separately
+// ==============================================================
+
+
+
+export const educatorLogin = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide email and password",
+      });
     }
 
-    // Mark as verified in Profile
-    let profile = await Profile.findOne({ user: user._id });
-    if (!profile) {
-      profile = new Profile({ user: user._id });
+    // Find educator
+    const educator = await Educator.findOne({ email, role: "educator" });
+    if (!educator) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials",
+      });
     }
 
-    profile.isPhoneVerified = true;
-    await profile.save();
+    const isMatch = await educator.matchPassword(password);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials",
+      });
+    }
+
+    // Generate token
+    const token = generateToken(educator._id);
 
     res.status(200).json({
       success: true,
-      message: 'Phone number marked as verified',
+      token,
+      user: {
+        id: educator._id,
+        email: educator.email,
+        role: "educator",
+      },
     });
-
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message || "Server error",
+    });
   }
 };
 
-// @desc    Add new educator
-// @route   POST /api/admin/add-educator
-// @access  Private (Admin only)
+/* ============================================================
+   ADMIN CREATES NEW EDUCATOR (optional)
+   Route: POST /api/admin/add-educator
+   Protected: Admin
+   ============================================================ */
+
 export const addEducator = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -704,24 +296,23 @@ export const addEducator = async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide email and password',
+        message: "Please provide email and password",
       });
     }
 
-    const educatorExists = await Educator.findOne({ email });
-    if (educatorExists) {
+    const existing = await Educator.findOne({ email });
+    if (existing) {
       return res.status(400).json({
         success: false,
-        message: 'Educator already exists with this email',
+        message: "Educator already exists",
       });
     }
 
-    console.log(`[ADMIN] Adding educator: ${email}`);
     const educator = await Educator.create({
       email,
       password,
+      role: "educator",
     });
-    console.log(`[ADMIN] Educator created successfully: ${educator._id}`);
 
     res.status(201).json({
       success: true,
@@ -730,64 +321,39 @@ export const addEducator = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Server error',
+      message: error.message || "Server error",
     });
   }
 };
 
-// @desc    Educator login
-// @route   POST /api/auth/educator-login
-// @access  Public
-export const educatorLogin = async (req, res) => {
+/* ============================================================
+   GET CURRENT LOGGED-IN EDUCATOR
+   This is part of getMe logic (shared with students)
+   ============================================================ */
+
+export const getCurrentEducator = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const educator = await Educator.findById(req.user.id);
 
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide email and password',
-      });
-    }
-
-    console.log(`[AUTH] Educator login attempt: ${email}`);
-    const educator = await Educator.findOne({ email, role: 'educator' });
     if (!educator) {
-      console.log(`[AUTH] Educator not found or role mismatch: ${email}`);
-      return res.status(401).json({
+      return res.status(404).json({
         success: false,
-        message: 'Invalid credentials',
+        message: "Educator not found",
       });
     }
-
-    console.log(`[AUTH] Educator found, checking password...`);
-    const isMatch = await educator.matchPassword(password);
-    console.log(`[AUTH] Password match result: ${isMatch}`);
-
-    if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials',
-      });
-    }
-
-    const token = generateToken(educator._id);
-    console.log(`[AUTH] Login successful, token generated for: ${email}`);
-    console.log(`[AUTH] Returning user data: role=${educator.role}, id=${educator._id}`);
 
     res.status(200).json({
       success: true,
-      token,
       user: {
         id: educator._id,
         email: educator.email,
-        role: 'educator',
+        role: "educator",
       },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Server error',
+      message: error.message || "Server error",
     });
   }
 };
-
