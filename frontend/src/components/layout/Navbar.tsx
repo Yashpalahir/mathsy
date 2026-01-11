@@ -239,6 +239,14 @@ export const Navbar = () => {
                           </Link>
                         </Button>
                       )}
+                      {userType === "student" && (
+                        <Button asChild variant="outline" className="w-full rounded-xl justify-start">
+                          <Link to="/student-dashboard" onClick={() => setIsOpen(false)}>
+                            <User className="w-4 h-4 mr-2" />
+                            Dashboard
+                          </Link>
+                        </Button>
+                      )}
                       <Button variant="destructive" className="w-full rounded-xl justify-start" onClick={handleLogout}>
                         <LogOut className="w-4 h-4 mr-2" />
                         Logout

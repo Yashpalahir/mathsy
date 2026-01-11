@@ -91,14 +91,22 @@ const CreateProfile = () => {
         try {
             setIsSendingOtp(true);
 
-            if (!recaptchaVerifierRef.current) {
-                recaptchaVerifierRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
-                    'size': 'invisible',
-                    'callback': () => {
-                        console.log('reCAPTCHA verified');
-                    }
-                });
+            // Clean up existing recaptcha if any
+            if (recaptchaVerifierRef.current) {
+                try {
+                    recaptchaVerifierRef.current.clear();
+                } catch (e) {
+                    console.warn("Error clearing recaptcha:", e);
+                }
+                recaptchaVerifierRef.current = null;
             }
+
+            recaptchaVerifierRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
+                'size': 'invisible',
+                'callback': () => {
+                    console.log('reCAPTCHA verified');
+                }
+            });
 
             let formattedPhone = phone.trim();
             if (!formattedPhone.startsWith('+')) {
