@@ -8,26 +8,10 @@ const userSchema = new mongoose.Schema(
       trim: true,
       maxlength: [100, 'Name cannot be more than 100 characters'],
     },
-    email: {
-      type: String,
-      unique: true,
-      lowercase: true,
-      trim: true,
-      match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email'],
-    },
-    password: {
-      type: String,
-      minlength: [6, 'Password must be at least 6 characters'],
-      select: false,
-    },
     phone: {
       type: String,
       unique: true,
       sparse: true,
-      trim: true,
-    },
-    studentClass: {
-      type: String,
       trim: true,
     },
     avatar: {
@@ -36,6 +20,12 @@ const userSchema = new mongoose.Schema(
     location: {
       latitude: Number,
       longitude: Number,
+    },
+    class: {
+      type: String,
+      required: [true, 'Please provide a class'],
+      enum: ['Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'],
+      trim: true,
     },
     role: {
       type: String,

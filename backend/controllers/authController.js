@@ -97,6 +97,9 @@ export const getMe = async (req, res) => {
         email: user.email,
         phone: user.phone,
         role: user.role,
+        phone: user.phone,
+        role: user.role,
+        class: user.class,
         isProfileComplete: user.isProfileComplete,
         profile: user.profile || null,
       },
@@ -117,12 +120,12 @@ export const completeProfile = async (req, res) => {
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
-
+    console.log(req.body);
     const { name, studentClass, location } = req.body;
 
     // Update basic fields
     if (name) user.name = name;
-    if (studentClass) user.studentClass = studentClass;
+    if (studentClass) user.class = studentClass;
 
     // Parse location (string or object)
     if (location) {
@@ -154,7 +157,7 @@ export const completeProfile = async (req, res) => {
         name: user.name,
         phone: user.phone,
         role: user.role,
-        studentClass: user.studentClass,
+        class: user.studentClass,
         avatar: user.avatar,
         location: user.location,
         isProfileComplete: user.isProfileComplete,

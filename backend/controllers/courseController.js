@@ -9,8 +9,8 @@ export const getCoursesForUser = async (req, res) => {
     // Extract user email from JWT (already available in req.user from protect middleware)
     const userEmail = req.user.email;
 
-    // Get user with studentClass
-    const user = await User.findOne({ email: userEmail }).select('studentClass');
+    // Get user with class
+    const user = await User.findOne({ email: userEmail }).select('class studentClass');
 
     if (!user) {
       return res.status(404).json({
@@ -19,8 +19,10 @@ export const getCoursesForUser = async (req, res) => {
       });
     }
 
-    // Check if user has a studentClass assigned
-    if (!user.studentClass) {
+    // Check if user has a class assigned (check 'class' first, then 'studentClass')
+    const userClass = user.class || user.studentClass;
+
+    if (!userClass) {
       return res.status(200).json({
         success: true,
         count: 0,
@@ -30,12 +32,12 @@ export const getCoursesForUser = async (req, res) => {
     }
 
     // Find courses matching the user's class
-    const courses = await Course.find({ class: user.studentClass }).sort({ createdAt: -1 });
+    const courses = await Course.find({ class: userClass }).sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
       count: courses.length,
-      studentClass: user.studentClass,
+      studentClass: userClass,
       data: courses,
     });
   } catch (error) {
@@ -51,7 +53,14 @@ export const getCoursesForUser = async (req, res) => {
 // @access  Public
 export const getCourses = async (req, res) => {
   try {
-    const courses = await Course.find().sort({ createdAt: -1 });
+    let query = {};
+
+    // Filter by class if provided in query params
+    if (req.query.class) {
+      query.class = req.query.class;
+    }
+
+    const courses = await Course.find(query).sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
