@@ -129,7 +129,7 @@
               "Properties": {
                 "Code": {
                   "S3Bucket": "serverless-framework-deployments-ap-south-1-d2a564ab-8a74",
-                  "S3Key": "serverless/mathsy-backend/dev/1768149863735-2026-01-11T16:44:23.735Z/mathsy-backend.zip"
+                  "S3Key": "serverless/mathsy-backend/dev/1768154356269-2026-01-11T17:59:16.269Z/mathsy-backend.zip"
                 },
                 "Handler": "server.handler",
                 "Runtime": "nodejs18.x",
@@ -171,14 +171,14 @@
                 "AppLogGroup"
               ]
             },
-            "AppLambdaVersionC3o9xNLJVrGnTWL15rFRanouVNYnHWpfcPLWgJvUbA": {
+            "AppLambdaVersionfUnahxuVQJPqQ53VoTp5E5YqM3HBN6KxFreiyEoCYI": {
               "Type": "AWS::Lambda::Version",
               "DeletionPolicy": "Retain",
               "Properties": {
                 "FunctionName": {
                   "Ref": "AppLambdaFunction"
                 },
-                "CodeSha256": "5rbLFUOLr/qaIW6ueY+6jjmdy3OQktjkp6BfZqRnETI="
+                "CodeSha256": "n0oWqvu5FQyldi+UoQAtc3GhwpU9IbuVQCoqIOUK+M4="
               }
             },
             "HttpApi": {
@@ -287,7 +287,7 @@
             "AppLambdaFunctionQualifiedArn": {
               "Description": "Current Lambda function version",
               "Value": {
-                "Ref": "AppLambdaVersionC3o9xNLJVrGnTWL15rFRanouVNYnHWpfcPLWgJvUbA"
+                "Ref": "AppLambdaVersionfUnahxuVQJPqQ53VoTp5E5YqM3HBN6KxFreiyEoCYI"
               },
               "Export": {
                 "Name": "sls-mathsy-backend-dev-AppLambdaFunctionQualifiedArn"
@@ -346,7 +346,7 @@
           "timeout": 12,
           "runtime": "nodejs18.x",
           "vpc": {},
-          "versionLogicalId": "AppLambdaVersionC3o9xNLJVrGnTWL15rFRanouVNYnHWpfcPLWgJvUbA"
+          "versionLogicalId": "AppLambdaVersionfUnahxuVQJPqQ53VoTp5E5YqM3HBN6KxFreiyEoCYI"
         }
       },
       "package": {
@@ -360,7 +360,7 @@
         "artifactsS3KeyDirname": "serverless/mathsy-backend/dev/code-artifacts",
         "deploymentBucket": "serverless-framework-deployments-ap-south-1-d2a564ab-8a74",
         "artifact": "/Users/ayushpratapsingh/Downloads/mathsy/backend/.serverless/mathsy-backend.zip",
-        "artifactDirectoryName": "serverless/mathsy-backend/dev/1768149863735-2026-01-11T16:44:23.735Z"
+        "artifactDirectoryName": "serverless/mathsy-backend/dev/1768154356269-2026-01-11T17:59:16.269Z"
       }
     },
     "provider": {
@@ -487,7 +487,7 @@
             "Properties": {
               "Code": {
                 "S3Bucket": "serverless-framework-deployments-ap-south-1-d2a564ab-8a74",
-                "S3Key": "serverless/mathsy-backend/dev/1768149863735-2026-01-11T16:44:23.735Z/mathsy-backend.zip"
+                "S3Key": "serverless/mathsy-backend/dev/1768154356269-2026-01-11T17:59:16.269Z/mathsy-backend.zip"
               },
               "Handler": "server.handler",
               "Runtime": "nodejs18.x",
@@ -529,14 +529,14 @@
               "AppLogGroup"
             ]
           },
-          "AppLambdaVersionC3o9xNLJVrGnTWL15rFRanouVNYnHWpfcPLWgJvUbA": {
+          "AppLambdaVersionfUnahxuVQJPqQ53VoTp5E5YqM3HBN6KxFreiyEoCYI": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "AppLambdaFunction"
               },
-              "CodeSha256": "5rbLFUOLr/qaIW6ueY+6jjmdy3OQktjkp6BfZqRnETI="
+              "CodeSha256": "n0oWqvu5FQyldi+UoQAtc3GhwpU9IbuVQCoqIOUK+M4="
             }
           },
           "HttpApi": {
@@ -645,7 +645,7 @@
           "AppLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "AppLambdaVersionC3o9xNLJVrGnTWL15rFRanouVNYnHWpfcPLWgJvUbA"
+              "Ref": "AppLambdaVersionfUnahxuVQJPqQ53VoTp5E5YqM3HBN6KxFreiyEoCYI"
             },
             "Export": {
               "Name": "sls-mathsy-backend-dev-AppLambdaFunctionQualifiedArn"
@@ -711,12 +711,12 @@
     "serviceProviderAwsCfStackName": "mathsy-backend-dev",
     "serviceProviderAwsCfStackId": "arn:aws:cloudformation:ap-south-1:913524912216:stack/mathsy-backend-dev/79b208b0-ebc9-11f0-ba5a-0adba345cbff",
     "serviceProviderAwsCfStackCreated": "2026-01-07T13:05:01.782Z",
-    "serviceProviderAwsCfStackUpdated": "2026-01-11T16:29:20.158Z",
+    "serviceProviderAwsCfStackUpdated": "2026-01-11T17:03:16.540Z",
     "serviceProviderAwsCfStackStatus": "UPDATE_COMPLETE",
     "serviceProviderAwsCfStackOutputs": [
       {
         "OutputKey": "AppLambdaFunctionQualifiedArn",
-        "OutputValue": "arn:aws:lambda:ap-south-1:913524912216:function:mathsy-backend-dev-app:22",
+        "OutputValue": "arn:aws:lambda:ap-south-1:913524912216:function:mathsy-backend-dev-app:24",
         "Description": "Current Lambda function version",
         "ExportName": "sls-mathsy-backend-dev-AppLambdaFunctionQualifiedArn"
       },
@@ -831,7 +831,7 @@
           "Properties": {
             "Code": {
               "S3Bucket": "serverless-framework-deployments-ap-south-1-d2a564ab-8a74",
-              "S3Key": "serverless/mathsy-backend/dev/1768149863735-2026-01-11T16:44:23.735Z/mathsy-backend.zip"
+              "S3Key": "serverless/mathsy-backend/dev/1768154356269-2026-01-11T17:59:16.269Z/mathsy-backend.zip"
             },
             "Handler": "server.handler",
             "Runtime": "nodejs18.x",
@@ -873,14 +873,14 @@
             "AppLogGroup"
           ]
         },
-        "AppLambdaVersionC3o9xNLJVrGnTWL15rFRanouVNYnHWpfcPLWgJvUbA": {
+        "AppLambdaVersionfUnahxuVQJPqQ53VoTp5E5YqM3HBN6KxFreiyEoCYI": {
           "Type": "AWS::Lambda::Version",
           "DeletionPolicy": "Retain",
           "Properties": {
             "FunctionName": {
               "Ref": "AppLambdaFunction"
             },
-            "CodeSha256": "5rbLFUOLr/qaIW6ueY+6jjmdy3OQktjkp6BfZqRnETI="
+            "CodeSha256": "n0oWqvu5FQyldi+UoQAtc3GhwpU9IbuVQCoqIOUK+M4="
           }
         },
         "HttpApi": {
@@ -989,7 +989,7 @@
         "AppLambdaFunctionQualifiedArn": {
           "Description": "Current Lambda function version",
           "Value": {
-            "Ref": "AppLambdaVersionC3o9xNLJVrGnTWL15rFRanouVNYnHWpfcPLWgJvUbA"
+            "Ref": "AppLambdaVersionfUnahxuVQJPqQ53VoTp5E5YqM3HBN6KxFreiyEoCYI"
           },
           "Export": {
             "Name": "sls-mathsy-backend-dev-AppLambdaFunctionQualifiedArn"

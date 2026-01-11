@@ -109,10 +109,10 @@ app.use((err, req, res, next) => {
 /* --------------------------------------
    🚀 Export Lambda Handler
 ---------------------------------------- */
-//export const handler = serverless(app);
+export const handler = serverless(app);
 
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running locally on http://localhost:${PORT}`);
-});
+// const PORT = process.env.PORT || 5000;
+// app.listen(PORT, () => {
+//   console.log(`🚀 Server running locally on http://localhost:${PORT}`);
+// });
