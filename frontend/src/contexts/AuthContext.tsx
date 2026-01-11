@@ -38,6 +38,8 @@ interface AuthContextType {
   loginWithOtp: (email: string, otp: string) => Promise<{ error: string | null }>;
   loginWithGoogle: (data: any) => Promise<{ error: string | null }>;
   completeProfile: (data: any) => Promise<{ error: string | null }>;
+  sendPhoneOtp: (phone: string) => Promise<{ error: string | null; message?: string }>;
+  verifyPhoneOtp: (phone: string, otp: string) => Promise<{ error: string | null; message?: string }>;
   refreshUser: () => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -224,6 +226,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const sendPhoneOtp = async (phone: string): Promise<{ error: string | null; message?: string }> => {
+    try {
+      const response = await apiClient.sendPhoneOtp(phone);
+      if (response.success) {
+        return { error: null, message: response.message };
+      }
+      return { error: "Failed to send OTP" };
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : "Failed to send OTP" };
+    }
+  };
+
+  const verifyPhoneOtp = async (phone: string, otp: string): Promise<{ error: string | null; message?: string }> => {
+    try {
+      const response = await apiClient.verifyPhoneOtp(phone, otp);
+      if (response.success && response.token && response.user) {
+        apiClient.setToken(response.token);
+        await refreshUser();
+        return { error: null, message: response.message };
+      }
+      return { error: "OTP Verification failed" };
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : "OTP Verification failed" };
+    }
+  };
+
   const logout = async () => {
     apiClient.setToken(null);
     setUser(null);
@@ -247,6 +275,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         loginWithOtp,
         loginWithGoogle,
         completeProfile,
+        sendPhoneOtp,
+        verifyPhoneOtp,
         refreshUser,
         logout
       }}

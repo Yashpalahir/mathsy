@@ -135,6 +135,20 @@ class ApiClient {
     });
   }
 
+  async sendPhoneOtp(phone: string) {
+    return this.request<{ success: boolean; message: string; otp?: string }>('/auth/send-phone-otp', {
+      method: 'POST',
+      body: JSON.stringify({ phone }),
+    });
+  }
+
+  async verifyPhoneOtp(phone: string, otp: string, isFirebaseVerified: boolean = false) {
+    return this.request<{ success: boolean; token: string; user: any; message: string }>('/auth/verify-phone-otp', {
+      method: 'POST',
+      body: JSON.stringify({ phone, otp, isFirebaseVerified }),
+    });
+  }
+
   async verifyWhatsAppOtp(otp: string) {
     return this.request<any>('/auth/verify-whatsapp-otp', {
       method: 'POST',
@@ -345,6 +359,80 @@ class ApiClient {
     return this.request<any>('/attendance/scan', {
       method: 'POST',
       body: JSON.stringify({ token }),
+    });
+  }
+
+  // Test endpoints
+  async getTests() {
+    return this.request<{ data: any[] }>('/tests', {
+      method: 'GET',
+    });
+  }
+
+  async getAllTests() {
+    return this.request<{ data: any[] }>('/tests/all', {
+      method: 'GET',
+    });
+  }
+
+  async getTest(id: string) {
+    return this.request<{ data: any }>(`/tests/${id}`, {
+      method: 'GET',
+    });
+  }
+
+  async createTest(data: any) {
+    return this.request<any>('/tests', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateTest(id: string, data: any) {
+    return this.request<any>(`/tests/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteTest(id: string) {
+    return this.request<void>(`/tests/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async submitTest(id: string, data: { answers: any[]; timeTaken: number }) {
+    return this.request<any>(`/tests/${id}/submit`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getTestResult(testId: string) {
+    return this.request<{ data: any }>(`/tests/${testId}/result`, {
+      method: 'GET',
+    });
+  }
+
+  async getAllTestResults() {
+    return this.request<{ data: any[] }>('/tests/results/all', {
+      method: 'GET',
+    });
+  }
+
+  async uploadFile(file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.request<{ url: string; public_id: string }>('/upload', {
+      method: 'POST',
+      body: formData,
+      headers: {}, // Let browser set content-type
+    });
+  }
+
+  async getEnrolledStudents(courseId: string) {
+    return this.request<{ data: any[] }>(`/enrollments/course/${courseId}/students`, {
+      method: 'GET',
     });
   }
 }

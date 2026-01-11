@@ -13,9 +13,8 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'mathsy_profiles',
-    allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
-    transformation: [{ width: 500, height: 500, crop: 'limit' }],
+    folder: 'mathsy_uploads',
+    allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'pdf', 'mp4'],
   },
 });
 

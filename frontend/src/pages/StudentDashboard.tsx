@@ -41,7 +41,9 @@ const StudentDashboard = () => {
   const [isFeesLoading, setIsFeesLoading] = useState(true);
   const [stats, setStats] = useState<any>(null);
   const [recentTests, setRecentTests] = useState<any[]>([]);
+  const [availableTests, setAvailableTests] = useState<any[]>([]);
   const [isStatsLoading, setIsStatsLoading] = useState(true);
+  const [isTestsDialogOpen, setIsTestsDialogOpen] = useState(false);
 
   // Edit Profile States
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -67,6 +69,7 @@ const StudentDashboard = () => {
     if (isAuthenticated && userType === "student") {
       fetchFeeStatus();
       fetchDashboardStats();
+      fetchAvailableTests();
     }
 
     return () => {
@@ -86,6 +89,17 @@ const StudentDashboard = () => {
       toast.error("Failed to load fee status");
     } finally {
       setIsFeesLoading(false);
+    }
+  };
+
+  const fetchAvailableTests = async () => {
+    try {
+      const response = await apiClient.getTests();
+      if (response.success) {
+        setAvailableTests(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching tests:", error);
     }
   };
 
@@ -233,13 +247,13 @@ const StudentDashboard = () => {
             <div className="flex items-center gap-4">
               <div className="relative group">
                 <div className="w-16 h-16 rounded-full border-2 border-primary/20 overflow-hidden bg-background shadow-sm">
-                  <img 
-                    src={avatarUrl} 
-                    alt={displayName} 
+                  <img
+                    src={avatarUrl}
+                    alt={displayName}
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <button 
+                <button
                   onClick={handleEditProfile}
                   className="absolute -bottom-1 -right-1 p-1.5 bg-primary text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
                 >
@@ -251,9 +265,9 @@ const StudentDashboard = () => {
                   <h1 className="font-display text-3xl font-bold text-foreground">
                     Welcome, {displayName}!
                   </h1>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className="h-8 w-8 rounded-full text-muted-foreground hover:text-primary"
                     onClick={handleEditProfile}
                   >
@@ -284,16 +298,16 @@ const StudentDashboard = () => {
                             </div>
                           )}
                         </div>
-                        <Label 
-                          htmlFor="avatar-upload" 
+                        <Label
+                          htmlFor="avatar-upload"
                           className="absolute bottom-0 right-0 p-2 bg-primary text-white rounded-full cursor-pointer hover:bg-primary/90 transition-colors shadow-lg"
                         >
                           <Camera className="w-4 h-4" />
-                          <Input 
-                            id="avatar-upload" 
-                            type="file" 
-                            accept="image/*" 
-                            className="hidden" 
+                          <Input
+                            id="avatar-upload"
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
                             onChange={handleAvatarChange}
                           />
                         </Label>
@@ -304,20 +318,20 @@ const StudentDashboard = () => {
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="name">Full Name</Label>
-                        <Input 
-                          id="name" 
-                          value={newName} 
-                          onChange={(e) => setNewName(e.target.value)} 
+                        <Input
+                          id="name"
+                          value={newName}
+                          onChange={(e) => setNewName(e.target.value)}
                           placeholder="Your full name"
                           required
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="username">Username</Label>
-                        <Input 
-                          id="username" 
-                          value={newUsername} 
-                          onChange={(e) => setNewUsername(e.target.value)} 
+                        <Input
+                          id="username"
+                          value={newUsername}
+                          onChange={(e) => setNewUsername(e.target.value)}
                           placeholder="Your unique username"
                           required
                         />
@@ -516,6 +530,74 @@ const StudentDashboard = () => {
 
             {/* Sidebar */}
             <div className="space-y-6">
+              {/* Available Tests */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <FileText className="w-5 h-5" />
+                    Available Tests
+                  </CardTitle>
+                  {availableTests.length > 2 && (
+                    <Button variant="ghost" size="sm" onClick={() => setIsTestsDialogOpen(true)}>
+                      View All
+                    </Button>
+                  )}
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {availableTests.length > 0 ? (
+                    availableTests.slice(0, 3).map((test, i) => (
+                      <div key={i} className="flex justify-between items-center p-3 bg-muted rounded-lg border border-primary/20">
+                        <div>
+                          <p className="font-bold text-sm text-primary">{test.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {test.duration} mins • {test.questions?.length || 0} questions
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="hero"
+                          onClick={() => navigate(`/test/${test._id}`)}
+                        >
+                          Start Test
+                        </Button>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center">No new tests available</p>
+                  )}
+
+                  <Dialog open={isTestsDialogOpen} onOpenChange={setIsTestsDialogOpen}>
+                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>All Available Tests</DialogTitle>
+                        <DialogDescription>
+                          Tests for your class and enrolled courses
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 mt-4">
+                        {availableTests.map((test, i) => (
+                          <div key={i} className="flex justify-between items-center p-4 bg-muted rounded-lg border border-primary/10 hover:border-primary/30 transition-colors">
+                            <div>
+                              <p className="font-bold text-primary">{test.name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {test.duration} mins • {test.questions?.length || 0} questions
+                              </p>
+                              {test.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{test.description}</p>}
+                            </div>
+                            <Button
+                              variant="hero"
+                              onClick={() => navigate(`/test/${test._id}`)}
+                            >
+                              Start Test
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </CardContent>
+              </Card>
+
               {/* Recent Tests */}
               <Card>
                 <CardHeader>
@@ -571,10 +653,10 @@ const StudentDashboard = () => {
                             </div>
                             <span
                               className={`text-xs font-bold px-2 py-1 rounded-full uppercase ${fee.status === 'paid'
-                                  ? 'bg-green-500/10 text-green-600'
-                                  : fee.status === 'pending'
-                                    ? 'bg-yellow-500/10 text-yellow-600'
-                                    : 'bg-red-500/10 text-red-600'
+                                ? 'bg-green-500/10 text-green-600'
+                                : fee.status === 'pending'
+                                  ? 'bg-yellow-500/10 text-yellow-600'
+                                  : 'bg-red-500/10 text-red-600'
                                 }`}
                             >
                               {fee.status}

@@ -1,26 +1,38 @@
 import mongoose from 'mongoose';
 
 const questionSchema = new mongoose.Schema({
+  type: {
+    type: String,
+    enum: ['mcq', 'subjective'],
+    default: 'mcq',
+  },
   question: {
     type: String,
     required: [true, 'Please provide a question'],
     trim: true,
   },
-  options: {
-    type: [String],
-    required: [true, 'Please provide 4 options'],
-    validate: {
-      validator: function(v) {
-        return v.length === 4;
-      },
-      message: 'Each question must have exactly 4 options',
-    },
+  image: {
+    type: String,
+    default: '',
   },
+  video: {
+    type: String,
+    default: '',
+  },
+  options: [
+    {
+      text: { type: String, required: true },
+      image: { type: String, default: '' }
+    }
+  ],
   correctAnswer: {
-    type: Number,
-    required: [true, 'Please provide the correct answer index'],
+    type: Number, // Index for MCQ, null for subjective
     min: [0, 'Correct answer must be between 0 and 3'],
     max: [3, 'Correct answer must be between 0 and 3'],
+  },
+  explanation: {
+    type: String,
+    default: '',
   },
   marks: {
     type: Number,
@@ -42,6 +54,15 @@ const testSchema = new mongoose.Schema(
       required: [true, 'Please provide a class'],
       trim: true,
     },
+    course: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Course',
+      default: null,
+    },
+    targetUsers: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    }],
     description: {
       type: String,
       trim: true,
@@ -51,7 +72,7 @@ const testSchema = new mongoose.Schema(
       type: [questionSchema],
       required: [true, 'Please provide at least one question'],
       validate: {
-        validator: function(v) {
+        validator: function (v) {
           return v.length > 0;
         },
         message: 'Test must have at least one question',
@@ -85,7 +106,7 @@ const testSchema = new mongoose.Schema(
 );
 
 // Calculate total marks before saving
-testSchema.pre('save', function(next) {
+testSchema.pre('save', function (next) {
   if (this.questions && this.questions.length > 0) {
     this.totalMarks = this.questions.reduce((sum, q) => sum + (q.marks || 1), 0);
   }

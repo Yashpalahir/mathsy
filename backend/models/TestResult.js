@@ -6,17 +6,29 @@ const answerSchema = new mongoose.Schema({
     required: true,
   },
   selectedAnswer: {
-    type: Number,
-    required: true,
+    type: Number, // For MCQ
+    default: -1,
+  },
+  subjectiveAnswer: {
+    type: String, // For subjective
+    default: '',
   },
   isCorrect: {
     type: Boolean,
-    required: true,
+    default: false,
   },
   marksObtained: {
     type: Number,
     default: 0,
   },
+  feedback: {
+    type: String, // Gemini feedback
+    default: '',
+  },
+  explanation: {
+    type: String, // Explanation for the question
+    default: '',
+  }
 }, { _id: false });
 
 const testResultSchema = new mongoose.Schema(

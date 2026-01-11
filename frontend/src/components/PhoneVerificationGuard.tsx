@@ -21,19 +21,18 @@ export const PhoneVerificationGuard = ({ children, requireAuth = true }: Props) 
     if (isLoading) return;
 
     if (isAuthenticated) {
-      const role = user?.role;
+      const role = user?.role as any;
       if (role === "admin" || role === "educator") return;
 
-      const isPhoneVerified = !!profile?.isPhoneVerified;
       const isProfileComplete = !!user?.isProfileComplete;
-
-      if (!isProfileComplete || !isPhoneVerified) {
-        if (location.pathname !== "/create-profile") {
-          navigate("/create-profile", { replace: true });
+      // Role is checked in AuthContext now, but we'll keep it simple here
+      if (!isProfileComplete && role !== "admin" && role !== "educator") {
+        if (location.pathname !== "/login") {
+          navigate("/login", { replace: true });
         }
       }
     }
-  }, [isAuthenticated, isLoading, location.pathname, navigate, profile?.isPhoneVerified, user?.isProfileComplete, user?.role]);
+  }, [isAuthenticated, isLoading, location.pathname, navigate, user?.isProfileComplete, user?.role]);
 
   if (isLoading) {
     return (
@@ -51,11 +50,10 @@ export const PhoneVerificationGuard = ({ children, requireAuth = true }: Props) 
   if (isAuthenticated) {
     const role = user?.role;
     if (role !== "admin" && role !== "educator") {
-      const isPhoneVerified = !!profile?.isPhoneVerified;
       const isProfileComplete = !!user?.isProfileComplete;
 
-      if ((!isProfileComplete || !isPhoneVerified) && location.pathname !== "/create-profile") {
-        return <Navigate to="/create-profile" replace />;
+      if (!isProfileComplete && location.pathname !== "/login") {
+        return <Navigate to="/login" replace />;
       }
     }
   }
