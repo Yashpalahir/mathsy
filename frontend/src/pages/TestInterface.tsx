@@ -50,7 +50,7 @@ const TestInterface = () => {
             const timeTaken = test.duration * 60 - timeLeft;
             await apiClient.submitTest(id!, { answers, timeTaken });
             toast.success("Test submitted successfully!");
-            navigate(`/test/${id}/result`);
+            navigate("/student-dashboard");
         } catch (error) {
             toast.error("Failed to submit test");
             setIsSubmitting(false);

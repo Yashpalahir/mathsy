@@ -555,12 +555,16 @@ const StudentDashboard = () => {
                         </div>
                         <Button
                           size="sm"
-                          variant={test.isAttempted ? "secondary" : "hero"}
-                          disabled={test.isAttempted}
-                          className={test.isAttempted ? "bg-gray-300 text-gray-600 border-none cursor-not-allowed" : ""}
-                          onClick={() => navigate(`/test/${test._id}`)}
+                          variant={test.isAttempted && !test.isEvaluated ? "secondary" : (test.isAttempted ? "outline" : "hero")}
+                          className={test.isAttempted ? (test.isEvaluated ? "border-primary text-primary hover:bg-primary/5" : "bg-gray-100 text-gray-400 cursor-not-allowed") : ""}
+                          disabled={test.isAttempted && !test.isEvaluated}
+                          onClick={() => navigate(test.isAttempted ? `/test/${test._id}/result` : `/test/${test._id}`)}
                         >
-                          {test.isAttempted ? "Attempted" : "Start Test"}
+                          {test.isAttempted && !test.isEvaluated ? (
+                            <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Evaluating...</>
+                          ) : (
+                            test.isAttempted ? "View Result" : "Start Test"
+                          )}
                         </Button>
                       </div>
                     ))
@@ -587,12 +591,16 @@ const StudentDashboard = () => {
                               {test.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{test.description}</p>}
                             </div>
                             <Button
-                              variant={test.isAttempted ? "secondary" : "hero"}
-                              disabled={test.isAttempted}
-                              className={test.isAttempted ? "bg-gray-300 text-gray-600 border-none cursor-not-allowed" : ""}
-                              onClick={() => navigate(`/test/${test._id}`)}
+                              variant={test.isAttempted && !test.isEvaluated ? "secondary" : (test.isAttempted ? "outline" : "hero")}
+                              className={test.isAttempted ? (test.isEvaluated ? "border-primary text-primary hover:bg-primary/5" : "bg-gray-100 text-gray-400 cursor-not-allowed") : ""}
+                              disabled={test.isAttempted && !test.isEvaluated}
+                              onClick={() => navigate(test.isAttempted ? `/test/${test._id}/result` : `/test/${test._id}`)}
                             >
-                              {test.isAttempted ? "Attempted" : "Start Test"}
+                              {test.isAttempted && !test.isEvaluated ? (
+                                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Evaluating...</>
+                              ) : (
+                                test.isAttempted ? "View Result" : "Start Test"
+                              )}
                             </Button>
                           </div>
                         ))}

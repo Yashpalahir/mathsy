@@ -24,11 +24,12 @@ export const getStudentDashboardStats = async (req, res) => {
 
     // 3. Get Tests Completed Count
     const testsCompletedCount = await TestResult.countDocuments({
-      student: studentId
+      student: studentId,
+      isEvaluated: true
     });
 
     // 4. Get Average Score
-    const testResults = await TestResult.find({ student: studentId });
+    const testResults = await TestResult.find({ student: studentId, isEvaluated: true });
     let avgScore = 0;
     if (testResults.length > 0) {
       const totalPercentage = testResults.reduce((sum, result) => sum + result.percentage, 0);
@@ -36,7 +37,7 @@ export const getStudentDashboardStats = async (req, res) => {
     }
 
     // 5. Get Recent Tests
-    const recentTests = await TestResult.find({ student: studentId })
+    const recentTests = await TestResult.find({ student: studentId, isEvaluated: true })
       .populate('test', 'name')
       .sort({ createdAt: -1 })
       .limit(5);
@@ -108,7 +109,7 @@ export const updateUserProfile = async (req, res) => {
 
     await profile.save();
 
-    const populatedUser = await User.findById(user._id).populate('profile');    res.status(200).json({
+    const populatedUser = await User.findById(user._id).populate('profile'); res.status(200).json({
       success: true,
       message: 'Profile updated successfully',
       user: {

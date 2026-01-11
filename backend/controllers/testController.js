@@ -145,7 +145,9 @@ export const getTests = async (req, res) => {
 
       testsWithStatus = tests.map(test => {
         const testObj = test.toObject();
-        testObj.isAttempted = attemptedTestIds.includes(test._id.toString());
+        const result = results.find(r => r.test.toString() === test._id.toString());
+        testObj.isAttempted = !!result;
+        testObj.isEvaluated = result ? result.isEvaluated : false;
         return testObj;
       });
     }
@@ -285,7 +287,7 @@ export const submitTest = async (req, res) => {
     }
 
     // Evaluate answers
-    const evaluatedAnswers = await Promise.all(test.questions.map(async (question, index) => {
+    const evaluatedAnswers = test.questions.map((question, index) => {
       const userAnswer = answers.find(a => a.questionIndex === index);
 
       if (question.type === 'mcq') {
@@ -293,41 +295,25 @@ export const submitTest = async (req, res) => {
         const isCorrect = selectedAnswer === question.correctAnswer;
         const marksObtained = isCorrect ? (question.marks || 1) : 0;
 
-        let explanation = question.explanation;
-        if (!explanation) {
-          explanation = await getExplanation(question.question, question.options, question.correctAnswer, 'mcq');
-        }
-
         return {
           questionIndex: index,
           selectedAnswer,
           isCorrect,
           marksObtained,
-          explanation
+          explanation: question.explanation || ''
         };
       } else {
-        // Subjective evaluation
-        const subjectiveAnswer = userAnswer ? userAnswer.subjectiveAnswer : '';
-        const evaluation = await evaluateSubjective(question.question, subjectiveAnswer);
-
-        // Map 0-10 score to question marks
-        const marksObtained = (evaluation.score / 10) * (question.marks || 1);
-
-        let solution = question.explanation;
-        if (!solution) {
-          solution = await getExplanation(question.question, [], null, 'subjective');
-        }
-
+        // Subjective: store with placeholder, evaluation happens in background
         return {
           questionIndex: index,
-          subjectiveAnswer,
-          isCorrect: evaluation.score >= 5, // Arbitrary threshold for "correct-ish"
-          marksObtained,
-          feedback: `${evaluation.feedback}\n\nSuggestions: ${evaluation.suggestions}`,
-          explanation: solution
+          subjectiveAnswer: userAnswer ? userAnswer.subjectiveAnswer : '',
+          isCorrect: false,
+          marksObtained: 0,
+          feedback: 'AI Evaluation in progress...',
+          explanation: ''
         };
       }
-    }));
+    });
 
     const obtainedMarks = evaluatedAnswers.reduce((sum, ans) => sum + ans.marksObtained, 0);
     const percentage = (obtainedMarks / test.totalMarks) * 100;
@@ -339,28 +325,84 @@ export const submitTest = async (req, res) => {
       answers: evaluatedAnswers,
       totalMarks: test.totalMarks,
       obtainedMarks,
-      percentage: Math.round(percentage * 100) / 100,
+      percentage,
       status,
       timeTaken: timeTaken || 0,
     });
 
-    res.status(201).json({
+    // Run background evaluation if there are subjective questions or missing explanations
+    const hasSubjective = test.questions.some(q => q.type === 'subjective');
+    const missingExplanations = test.questions.some(q => !q.explanation);
+
+    if (hasSubjective || missingExplanations) {
+      evaluateTestInBackground(test, testResult.id);
+    } else {
+      testResult.isEvaluated = true;
+      await testResult.save();
+    }
+
+    res.status(200).json({
       success: true,
-      message: 'Test submitted successfully',
+      message: 'Test submitted successfully. Evaluation is in progress.',
       data: testResult,
     });
   } catch (error) {
-    if (error.code === 11000) {
-      return res.status(400).json({
-        success: false,
-        message: 'You have already submitted this test',
-      });
-    }
-    console.error('Error submitting test:', error);
+    console.error('Test Submission Error:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'Server error',
     });
+  }
+};
+
+// Helper for background evaluation
+const evaluateTestInBackground = async (test, resultId) => {
+  try {
+    const result = await TestResult.findById(resultId);
+    if (!result) return;
+
+    const evaluatedAnswers = await Promise.all(test.questions.map(async (question, index) => {
+      const currentAnswer = result.answers.find(a => a.questionIndex === index);
+
+      if (question.type === 'mcq') {
+        let explanation = question.explanation;
+        if (!explanation) {
+          explanation = await getExplanation(question.question, question.options, question.correctAnswer, 'mcq');
+        }
+        return { ...currentAnswer.toObject(), explanation };
+      } else {
+        const evaluation = await evaluateSubjective(question.question, currentAnswer.subjectiveAnswer);
+        const marksObtained = (evaluation.score / 10) * (question.marks || 1);
+
+        let solution = question.explanation;
+        if (!solution) {
+          solution = await getExplanation(question.question, [], null, 'subjective');
+        }
+
+        return {
+          ...currentAnswer.toObject(),
+          isCorrect: evaluation.score >= 5,
+          marksObtained,
+          feedback: `${evaluation.feedback}\n\nSuggestions: ${evaluation.suggestions}`,
+          explanation: solution
+        };
+      }
+    }));
+
+    const totalObtainedMarks = evaluatedAnswers.reduce((sum, ans) => sum + ans.marksObtained, 0);
+    const percentage = (totalObtainedMarks / result.totalMarks) * 100;
+    const status = percentage >= (test.passingMarks || 0) ? 'passed' : 'failed';
+
+    result.answers = evaluatedAnswers;
+    result.obtainedMarks = totalObtainedMarks;
+    result.percentage = percentage;
+    result.status = status;
+    result.isEvaluated = true;
+    await result.save();
+
+    console.log(`Background evaluation completed for Result ID: ${resultId}`);
+  } catch (error) {
+    console.error(`Background Evaluation Error (Result ID: ${resultId}):`, error);
   }
 };
 
