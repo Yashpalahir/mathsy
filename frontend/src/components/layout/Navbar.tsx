@@ -33,9 +33,8 @@ export const Navbar = () => {
   const { isAuthenticated, user, profile, userType, logout } = useAuth();
   const navigate = useNavigate();
 
-  const isProfileIncomplete = isAuthenticated && 
-    (userType === "student" || userType === "parent") && 
-    (!user?.isProfileComplete || !profile?.isPhoneVerified);
+  /* Removed isProfileIncomplete check as it is now forced at login */
+  const isProfileIncomplete = false;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -53,11 +52,10 @@ export const Navbar = () => {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrolled || isOpen
-          ? "bg-background/95 backdrop-blur-lg border-b border-border/50 py-2 shadow-lg shadow-primary/5"
-          : "bg-transparent py-4"
-      }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled || isOpen
+        ? "bg-background/95 backdrop-blur-lg border-b border-border/50 py-2 shadow-lg shadow-primary/5"
+        : "bg-transparent py-4"
+        }`}
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between">
@@ -73,52 +71,49 @@ export const Navbar = () => {
           </motion.div>
 
           {/* Desktop Navigation */}
-          {!isProfileIncomplete && (
-            <div className="hidden lg:flex items-center gap-1 bg-muted/20 backdrop-blur-sm p-1 rounded-full">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  onMouseEnter={() => setHoveredPath(link.path)}
-                  onMouseLeave={() => setHoveredPath(null)}
-                  className={`relative px-4 py-2 rounded-full text-sm font-medium transition-colors duration-300 ${
-                    location.pathname === link.path
-                      ? "text-primary"
-                      : "text-foreground/70 hover:text-primary"
+          <div className="hidden lg:flex items-center gap-1 bg-muted/20 backdrop-blur-sm p-1 rounded-full">
+            {navLinks.map((link) => (
+              <Link
+                key={link.path}
+                to={link.path}
+                onMouseEnter={() => setHoveredPath(link.path)}
+                onMouseLeave={() => setHoveredPath(null)}
+                className={`relative px-4 py-2 rounded-full text-sm font-medium transition-colors duration-300 ${location.pathname === link.path
+                  ? "text-primary"
+                  : "text-foreground/70 hover:text-primary"
                   }`}
-                >
-                  <span className="relative z-10">{link.name}</span>
-                  {hoveredPath === link.path && (
-                    <motion.div
-                      layoutId="navbar-hover"
-                      className="absolute inset-0 bg-primary/10 rounded-full -z-0"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                    />
-                  )}
-                  {location.pathname === link.path && (
-                    <motion.div
-                      layoutId="navbar-active"
-                      className="absolute inset-0 bg-primary/5 rounded-full border border-primary/20 -z-0"
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                    />
-                  )}
-                </Link>
-              ))}
-            </div>
-          )}
+              >
+                <span className="relative z-10">{link.name}</span>
+                {hoveredPath === link.path && (
+                  <motion.div
+                    layoutId="navbar-hover"
+                    className="absolute inset-0 bg-primary/10 rounded-full -z-0"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+                {location.pathname === link.path && (
+                  <motion.div
+                    layoutId="navbar-active"
+                    className="absolute inset-0 bg-primary/5 rounded-full border border-primary/20 -z-0"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+              </Link>
+            ))}
+          </div>
 
           {/* CTA Buttons */}
           <div className="hidden lg:flex items-center gap-3">
             {isAuthenticated ? (
               <>
-                {!isProfileIncomplete && userType === "admin" && (
+                {(userType === "admin" || userType === "educator") && (
                   <Button asChild variant="outline" size="sm" className="rounded-full">
-                    <Link to="/admin">
+                    <Link to={userType === "admin" ? "/admin" : "/educator-welcome"}>
                       <Settings className="w-4 h-4 mr-2" />
-                      Admin
+                      {userType === "admin" ? "Admin" : "Educator"}
                     </Link>
                   </Button>
                 )}
@@ -140,22 +135,16 @@ export const Navbar = () => {
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    {!isProfileIncomplete && userType === "student" && (
+                    {userType === "student" && (
                       <DropdownMenuItem onClick={() => navigate("/student-dashboard")} className="cursor-pointer rounded-md">
                         <User className="w-4 h-4 mr-2" />
                         Dashboard
                       </DropdownMenuItem>
                     )}
-                    {!isProfileIncomplete && userType === "admin" && (
+                    {userType === "admin" && (
                       <DropdownMenuItem onClick={() => navigate("/admin")} className="cursor-pointer rounded-md">
                         <Settings className="w-4 h-4 mr-2" />
                         Admin Panel
-                      </DropdownMenuItem>
-                    )}
-                    {isProfileIncomplete && (
-                      <DropdownMenuItem onClick={() => navigate("/create-profile")} className="cursor-pointer rounded-md">
-                        <User className="w-4 h-4 mr-2" />
-                        Complete Profile
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuSeparator />
@@ -205,7 +194,7 @@ export const Navbar = () => {
                     key={link.path}
                     initial={{ x: -20, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
-                    transition={{ 
+                    transition={{
                       delay: index * 0.05,
                       type: "spring",
                       stiffness: 300,
@@ -215,17 +204,16 @@ export const Navbar = () => {
                     <Link
                       to={link.path}
                       onClick={() => setIsOpen(false)}
-                      className={`block px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 ${
-                        location.pathname === link.path
-                          ? "text-primary bg-primary/10"
-                          : "text-foreground/70 hover:text-primary hover:bg-muted hover:pl-6"
-                      }`}
+                      className={`block px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 ${location.pathname === link.path
+                        ? "text-primary bg-primary/10"
+                        : "text-foreground/70 hover:text-primary hover:bg-muted hover:pl-6"
+                        }`}
                     >
                       {link.name}
                     </Link>
                   </motion.div>
                 ))}
-                
+
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -243,19 +231,19 @@ export const Navbar = () => {
                           <p className="text-muted-foreground text-xs">{user?.email}</p>
                         </div>
                       </div>
-                      {!isProfileIncomplete && userType === "admin" && (
+                      {(userType === "admin" || userType === "educator") && (
                         <Button asChild variant="outline" className="w-full rounded-xl justify-start">
-                          <Link to="/admin" onClick={() => setIsOpen(false)}>
+                          <Link to={userType === "admin" ? "/admin" : "/educator-welcome"} onClick={() => setIsOpen(false)}>
                             <Settings className="w-4 h-4 mr-2" />
-                            Admin Panel
+                            {userType === "admin" ? "Admin Panel" : "Educator Dashboard"}
                           </Link>
                         </Button>
                       )}
-                      {isProfileIncomplete && (
-                        <Button asChild variant="hero" className="w-full rounded-xl justify-start">
-                          <Link to="/create-profile" onClick={() => setIsOpen(false)}>
+                      {userType === "student" && (
+                        <Button asChild variant="outline" className="w-full rounded-xl justify-start">
+                          <Link to="/student-dashboard" onClick={() => setIsOpen(false)}>
                             <User className="w-4 h-4 mr-2" />
-                            Complete Profile
+                            Dashboard
                           </Link>
                         </Button>
                       )}

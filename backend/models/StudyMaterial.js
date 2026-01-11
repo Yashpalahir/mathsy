@@ -18,9 +18,10 @@ const studyMaterialSchema = new mongoose.Schema(
       enum: ['Notes', 'Practice Sheets', 'Previous Year Questions'],
       trim: true,
     },
-    grade: {
+    class: {
       type: String,
-      required: [true, 'Please provide a grade'],
+      required: [true, 'Please provide a class'],
+      enum: ['Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12'],
       trim: true,
     },
     pdfData: {

@@ -12,7 +12,7 @@ import { apiClient } from "@/lib/api";
 import { toast } from "react-toastify";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
-import { Loader2, Plus, Edit, Trash2, BookOpen, FileText } from "lucide-react";
+import { Loader2, Plus, Edit, Trash2, BookOpen, FileText, Upload, Image as ImageIcon, Film } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Select from "react-select";
 
@@ -44,7 +44,7 @@ interface StudyMaterial {
   title: string;
   description?: string;
   category: string;
-  grade: string;
+  class: string;
   pdfUrl: string;
   pages: number;
   questions: number;
@@ -88,7 +88,7 @@ const Admin = () => {
     title: "",
     description: "",
     category: "Notes",
-    grade: "",
+    class: "",
     pages: "",
     questions: "",
     year: "",
@@ -103,6 +103,39 @@ const Admin = () => {
   });
   const [isEducatorDialogOpen, setIsEducatorDialogOpen] = useState(false);
 
+  // Test state
+  const [tests, setTests] = useState<any[]>([]);
+  const [isTestDialogOpen, setIsTestDialogOpen] = useState(false);
+  const [editingTest, setEditingTest] = useState<any | null>(null);
+  const [testFormData, setTestFormData] = useState({
+    name: "",
+    class: "",
+    description: "",
+    duration: 60,
+    passingMarks: 0,
+    questions: [
+      {
+        type: "mcq",
+        question: "",
+        image: "",
+        video: "",
+        options: [
+          { text: "", image: "" },
+          { text: "", image: "" },
+          { text: "", image: "" },
+          { text: "", image: "" }
+        ],
+        correctAnswer: 0,
+        marks: 1,
+        explanation: ""
+      }
+    ] as any[],
+    targetUsers: [] as string[],
+    course: ""
+  });
+  const [enrolledStudents, setEnrolledStudents] = useState<any[]>([]);
+  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
+
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || userType !== "admin")) {
@@ -110,8 +143,55 @@ const Admin = () => {
     } else if (userType === "admin") {
       fetchCourses();
       fetchStudyMaterials();
+      fetchTests();
     }
   }, [isAuthenticated, userType, authLoading, navigate]);
+
+  const [uploading, setUploading] = useState<{ [key: string]: boolean }>({});
+
+  const handleFileUpload = async (file: File, path: string, callback: (url: string) => void) => {
+    try {
+      setUploading(prev => ({ ...prev, [path]: true }));
+      const response = await (apiClient as any).uploadFile(file);
+      if (response.success && response.url) {
+        callback(response.url);
+        toast.success("File uploaded successfully");
+      }
+    } catch (error) {
+      toast.error("Upload failed");
+      console.error(error);
+    } finally {
+      setUploading(prev => ({ ...prev, [path]: false }));
+    }
+  };
+
+  const fetchTests = async () => {
+    try {
+      setIsLoading(true);
+      const response = await apiClient.getTests();
+      if (response.success && response.data) {
+        setTests(response.data);
+      }
+    } catch (error) {
+      toast.error("Failed to fetch tests");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchEnrolledStudents = async (courseId: string) => {
+    try {
+      setIsLoadingStudents(true);
+      const response = await (apiClient as any).getEnrolledStudents(courseId);
+      if (response.success && response.data) {
+        setEnrolledStudents(response.data);
+      }
+    } catch (error) {
+      toast.error("Failed to fetch enrolled students");
+    } finally {
+      setIsLoadingStudents(false);
+    }
+  };
 
   const fetchCourses = async () => {
     try {
@@ -253,7 +333,7 @@ const Admin = () => {
       formDataToSend.append('title', materialFormData.title);
       formDataToSend.append('description', materialFormData.description);
       formDataToSend.append('category', materialFormData.category);
-      formDataToSend.append('grade', materialFormData.grade);
+      formDataToSend.append('class', materialFormData.class);
       formDataToSend.append('pages', materialFormData.pages);
       formDataToSend.append('questions', materialFormData.questions);
       formDataToSend.append('year', materialFormData.year);
@@ -270,7 +350,7 @@ const Admin = () => {
           title: materialFormData.title,
           description: materialFormData.description,
           category: materialFormData.category,
-          grade: materialFormData.grade,
+          class: materialFormData.class,
           pages: Number(materialFormData.pages) || 0,
           questions: Number(materialFormData.questions) || 0,
           year: materialFormData.year,
@@ -294,7 +374,7 @@ const Admin = () => {
       title: material.title,
       description: material.description || "",
       category: material.category,
-      grade: material.grade,
+      class: material.class,
       pages: material.pages.toString(),
       questions: material.questions.toString(),
       year: material.year || "",
@@ -323,7 +403,7 @@ const Admin = () => {
       title: "",
       description: "",
       category: "Notes",
-      grade: "",
+      class: "",
       pages: "",
       questions: "",
       year: "",
@@ -349,6 +429,129 @@ const Admin = () => {
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to add educator");
     }
+  };
+
+  const handleTestSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingTest) {
+        await apiClient.updateTest(editingTest._id, testFormData);
+        toast.success("Test updated successfully");
+      } else {
+        await apiClient.createTest(testFormData);
+        toast.success("Test created successfully");
+      }
+      setIsTestDialogOpen(false);
+      fetchTests();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save test");
+    }
+  };
+
+  const handleTestEdit = (test: any) => {
+    setEditingTest(test);
+    setTestFormData({
+      name: test.name,
+      class: test.class,
+      description: test.description || "",
+      duration: test.duration,
+      passingMarks: test.passingMarks,
+      questions: test.questions,
+      targetUsers: test.targetUsers || [],
+      course: test.course || ""
+    });
+    if (test.course) {
+      fetchEnrolledStudents(test.course);
+    } else {
+      setEnrolledStudents([]);
+    }
+    setIsTestDialogOpen(true);
+  };
+
+  const handleTestDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this test?")) return;
+    try {
+      await apiClient.deleteTest(id);
+      toast.success("Test deleted successfully");
+      fetchTests();
+    } catch (error) {
+      toast.error("Failed to delete test");
+    }
+  };
+
+  const resetTestForm = () => {
+    setTestFormData({
+      name: "",
+      class: "",
+      description: "",
+      duration: 60,
+      passingMarks: 0,
+      questions: [
+        {
+          type: "mcq",
+          question: "",
+          image: "",
+          video: "",
+          options: [
+            { text: "", image: "" },
+            { text: "", image: "" },
+            { text: "", image: "" },
+            { text: "", image: "" }
+          ],
+          correctAnswer: 0,
+          marks: 1,
+          explanation: ""
+        }
+      ],
+      targetUsers: [],
+      course: ""
+    });
+    setEditingTest(null);
+    setEnrolledStudents([]);
+  };
+
+  const addQuestion = () => {
+    setTestFormData({
+      ...testFormData,
+      questions: [
+        ...testFormData.questions,
+        {
+          type: "mcq",
+          question: "",
+          image: "",
+          video: "",
+          options: [
+            { text: "", image: "" },
+            { text: "", image: "" },
+            { text: "", image: "" },
+            { text: "", image: "" }
+          ],
+          correctAnswer: 0,
+          marks: 1,
+          explanation: ""
+        }
+      ]
+    });
+  };
+
+  const removeQuestion = (index: number) => {
+    const newQuestions = [...testFormData.questions];
+    newQuestions.splice(index, 1);
+    setTestFormData({ ...testFormData, questions: newQuestions });
+  };
+
+  const updateQuestion = (index: number, field: string, value: any) => {
+    const newQuestions = [...testFormData.questions];
+    newQuestions[index] = { ...newQuestions[index], [field]: value };
+    setTestFormData({ ...testFormData, questions: newQuestions });
+  };
+
+  const updateOption = (qIndex: number, oIndex: number, field: string, value: string) => {
+    const newQuestions = [...testFormData.questions];
+    const newOptions = [...newQuestions[qIndex].options];
+    newOptions[oIndex] = { ...newOptions[oIndex], [field]: value };
+    newQuestions[qIndex] = { ...newQuestions[qIndex], options: newOptions };
+    setTestFormData({ ...testFormData, questions: newQuestions });
   };
 
 
@@ -697,7 +900,7 @@ const Admin = () => {
                     <div className="flex-1">
                       <h3 className="font-semibold">{material.title}</h3>
                       <p className="text-sm text-muted-foreground">
-                        {material.category} • {material.grade}
+                        {material.category} • {material.class}
                         {material.course && ` • ${material.course.title}`}
                         {material.pages > 0 && ` • ${material.pages} pages`}
                         {material.questions > 0 && ` • ${material.questions} questions`}
@@ -797,6 +1000,68 @@ const Admin = () => {
           </CardContent>
         </Card>
 
+        {/* Test Management Section */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Test Management ({tests.length})
+            </CardTitle>
+            <CardDescription>Create and manage online tests with AI integration</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-between items-center mb-6">
+              <p className="text-sm text-muted-foreground">
+                Create MCQs or subjective tests with automatic AI evaluation
+              </p>
+              <Button variant="hero" onClick={() => { resetTestForm(); setIsTestDialogOpen(true); }}>
+                <Plus className="w-4 h-4 mr-2" />
+                Create Test
+              </Button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Test Name</TableHead>
+                    <TableHead>Class</TableHead>
+                    <TableHead>Duration</TableHead>
+                    <TableHead>Questions</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {tests.map((test) => (
+                    <TableRow key={test._id}>
+                      <TableCell className="font-medium">{test.name}</TableCell>
+                      <TableCell>{test.class}</TableCell>
+                      <TableCell>{test.duration} mins</TableCell>
+                      <TableCell>{test.questions?.length || 0}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${test.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                          {test.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" size="sm" onClick={() => handleTestEdit(test)}>
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => handleTestDelete(test._id)}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+
 
         {/* Study Material Dialog */}
         <Dialog open={isMaterialDialogOpen} onOpenChange={setIsMaterialDialogOpen}>
@@ -849,20 +1114,22 @@ const Admin = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="material-grade">Grade</Label>
+                  <Label htmlFor="material-class">Class</Label>
                   <select
-                    id="material-grade"
-                    value={materialFormData.grade}
-                    onChange={(e) => setMaterialFormData({ ...materialFormData, grade: e.target.value })}
+                    id="material-class"
+                    value={materialFormData.class}
+                    onChange={(e) => setMaterialFormData({ ...materialFormData, class: e.target.value })}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     required
                   >
-                    <option value="">-- Select Grade --</option>
+                    <option value="">-- Select Class --</option>
                     <option value="Class 6">Class 6</option>
                     <option value="Class 7">Class 7</option>
                     <option value="Class 8">Class 8</option>
                     <option value="Class 9">Class 9</option>
                     <option value="Class 10">Class 10</option>
+                    <option value="Class 11">Class 11</option>
+                    <option value="Class 12">Class 12</option>
                   </select>
                 </div>
               </div>
@@ -955,6 +1222,284 @@ const Admin = () => {
                 </Button>
                 <Button type="submit" variant="hero">
                   {editingMaterial ? "Update Material" : "Upload Material"}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Test Creation Dialog */}
+        <Dialog open={isTestDialogOpen} onOpenChange={setIsTestDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{editingTest ? "Edit Test" : "Create New Test"}</DialogTitle>
+              <DialogDescription>Configure test settings and questions</DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleTestSubmit} className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Test Name *</Label>
+                  <Input
+                    value={testFormData.name}
+                    onChange={(e) => setTestFormData({ ...testFormData, name: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label>Class *</Label>
+                  <select
+                    value={testFormData.class}
+                    onChange={(e) => setTestFormData({ ...testFormData, class: e.target.value })}
+                    className="w-full h-10 px-3 border rounded-md"
+                    required
+                  >
+                    <option value="">Select Class</option>
+                    <option value="Class 6">Class 6</option>
+                    <option value="Class 7">Class 7</option>
+                    <option value="Class 8">Class 8</option>
+                    <option value="Class 9">Class 9</option>
+                    <option value="Class 10">Class 10</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Assigned Course</Label>
+                  <select
+                    value={testFormData.course}
+                    onChange={(e) => {
+                      const courseId = e.target.value;
+                      setTestFormData({ ...testFormData, course: courseId });
+                      if (courseId) {
+                        fetchEnrolledStudents(courseId);
+                      } else {
+                        setEnrolledStudents([]);
+                      }
+                    }}
+                    className="w-full h-10 px-3 border rounded-md"
+                  >
+                    <option value="">None (Available to all in Class)</option>
+                    {courses.map(course => (
+                      <option key={course._id} value={course._id}>{course.title}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label>Target Specific Students (Optional)</Label>
+                  <Select
+                    isMulti
+                    options={enrolledStudents.map(s => ({ value: s._id, label: `${s.name} (${s.email})` }))}
+                    value={enrolledStudents
+                      .filter(s => testFormData.targetUsers.includes(s._id))
+                      .map(s => ({ value: s._id, label: `${s.name} (${s.email})` }))}
+                    onChange={(selected: any) => {
+                      setTestFormData({
+                        ...testFormData,
+                        targetUsers: selected ? selected.map((s: any) => s.value) : []
+                      });
+                    }}
+                    isLoading={isLoadingStudents}
+                    placeholder="Select students..."
+                    styles={{
+                      control: (base) => ({
+                        ...base,
+                        minHeight: '40px',
+                        borderColor: 'hsl(var(--input))',
+                        '&:hover': { borderColor: 'hsl(var(--input))' },
+                      }),
+                      menu: (base) => ({
+                        ...base,
+                        backgroundColor: 'hsl(var(--background))',
+                        zIndex: 100,
+                      }),
+                      option: (base, state) => ({
+                        ...base,
+                        backgroundColor: state.isFocused ? 'hsl(var(--accent))' : 'transparent',
+                        color: 'hsl(var(--foreground))',
+                      }),
+                    }}
+                  />
+                  {testFormData.course && enrolledStudents.length === 0 && !isLoadingStudents && (
+                    <p className="text-xs text-muted-foreground mt-1">No students enrolled in this course yet.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Duration (Minutes)</Label>
+                  <Input
+                    type="number"
+                    value={testFormData.duration}
+                    onChange={(e) => setTestFormData({ ...testFormData, duration: Number(e.target.value) })}
+                  />
+                </div>
+                <div>
+                  <Label>Passing Marks</Label>
+                  <Input
+                    type="number"
+                    value={testFormData.passingMarks}
+                    onChange={(e) => setTestFormData({ ...testFormData, passingMarks: Number(e.target.value) })}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label>Description</Label>
+                <Textarea
+                  value={testFormData.description}
+                  onChange={(e) => setTestFormData({ ...testFormData, description: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-bold text-lg">Questions ({testFormData.questions.length})</h3>
+                  <Button type="button" onClick={addQuestion} variant="outline" size="sm">
+                    <Plus className="w-4 h-4 mr-2" /> Add Question
+                  </Button>
+                </div>
+
+                {testFormData.questions.map((q, qIdx) => (
+                  <Card key={qIdx} className="p-4 border-2">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex gap-4 items-center">
+                        <span className="font-bold flex items-center justify-center w-8 h-8 rounded-full bg-primary text-white text-sm">
+                          {qIdx + 1}
+                        </span>
+                        <select
+                          value={q.type}
+                          onChange={(e) => updateQuestion(qIdx, 'type', e.target.value)}
+                          className="h-9 px-2 border rounded-md text-sm"
+                        >
+                          <option value="mcq">MCQ</option>
+                          <option value="subjective">Subjective</option>
+                        </select>
+                        <Input
+                          type="number"
+                          value={q.marks}
+                          onChange={(e) => updateQuestion(qIdx, 'marks', Number(e.target.value))}
+                          className="w-20 h-9"
+                          placeholder="Marks"
+                        />
+                      </div>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => removeQuestion(qIdx)}>
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label>Question Text</Label>
+                      <Textarea
+                        value={q.question}
+                        onChange={(e) => updateQuestion(qIdx, 'question', e.target.value)}
+                        required
+                      />
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>Question Image</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleFileUpload(file, `q-${qIdx}-img`, (url) => updateQuestion(qIdx, 'image', url));
+                              }}
+                              className="flex-1"
+                            />
+                            {q.image && (
+                              <div className="w-10 h-10 border rounded bg-muted flex items-center justify-center overflow-hidden">
+                                <img src={q.image} alt="Preview" className="object-cover w-full h-full" />
+                              </div>
+                            )}
+                            {uploading[`q-${qIdx}-img`] && <Loader2 className="w-4 h-4 animate-spin mt-3" />}
+                          </div>
+                        </div>
+                        <div>
+                          <Label>Question Video</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              type="file"
+                              accept="video/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleFileUpload(file, `q-${qIdx}-vid`, (url) => updateQuestion(qIdx, 'video', url));
+                              }}
+                              className="flex-1"
+                            />
+                            {uploading[`q-${qIdx}-vid`] && <Loader2 className="w-4 h-4 animate-spin mt-3" />}
+                          </div>
+                        </div>
+                      </div>
+
+                      {q.type === 'mcq' && (
+                        <div className="space-y-3 pt-2">
+                          <Label>Options</Label>
+                          <div className="grid grid-cols-1 gap-2">
+                            {q.options.map((opt: any, oIdx: number) => (
+                              <div key={oIdx} className="flex gap-2 items-center">
+                                <input
+                                  type="radio"
+                                  name={`correct-${qIdx}`}
+                                  checked={q.correctAnswer === oIdx}
+                                  onChange={() => updateQuestion(qIdx, 'correctAnswer', oIdx)}
+                                />
+                                <Input
+                                  value={opt.text}
+                                  onChange={(e) => updateOption(qIdx, oIdx, 'text', e.target.value)}
+                                  placeholder={`Option ${String.fromCharCode(65 + oIdx)}`}
+                                  className="flex-1"
+                                  required={q.type === 'mcq'}
+                                />
+                                <div className="flex gap-1 items-center">
+                                  <Label htmlFor={`opt-file-${qIdx}-${oIdx}`} className="cursor-pointer p-2 border rounded hover:bg-muted">
+                                    <ImageIcon className="w-4 h-4" />
+                                    <input
+                                      id={`opt-file-${qIdx}-${oIdx}`}
+                                      type="file"
+                                      accept="image/*"
+                                      className="hidden"
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) handleFileUpload(file, `q-${qIdx}-o-${oIdx}-img`, (url) => updateOption(qIdx, oIdx, 'image', url));
+                                      }}
+                                    />
+                                  </Label>
+                                  {opt.image && (
+                                    <div className="w-8 h-8 border rounded bg-muted flex items-center justify-center overflow-hidden">
+                                      <img src={opt.image} alt="Preview" className="object-cover w-full h-full" />
+                                    </div>
+                                  )}
+                                  {uploading[`q-${qIdx}-o-${oIdx}-img`] && <Loader2 className="w-4 h-4 animate-spin" />}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div>
+                        <Label>Explanation / Solution</Label>
+                        <Textarea
+                          value={q.explanation}
+                          onChange={(e) => updateQuestion(qIdx, 'explanation', e.target.value)}
+                          placeholder="If left empty, Gemini will generate this."
+                        />
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+
+              <div className="flex justify-end gap-3 pt-6 border-t">
+                <Button type="button" variant="outline" onClick={() => setIsTestDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" variant="hero">
+                  {editingTest ? "Update Test" : "Create Test"}
                 </Button>
               </div>
             </form>

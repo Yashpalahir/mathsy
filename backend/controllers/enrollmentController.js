@@ -173,3 +173,30 @@ export const checkEnrollment = async (req, res) => {
     });
   }
 };
+
+// @desc    Get enrolled students for a course
+// @route   GET /api/enrollments/course/:courseId/students
+// @access  Private/Admin
+export const getEnrolledStudents = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+
+    const enrollments = await Enrollment.find({
+      course: courseId,
+      status: 'active',
+    }).populate('student', 'name email');
+
+    const students = enrollments.map(e => e.student).filter(Boolean);
+
+    res.status(200).json({
+      success: true,
+      count: students.length,
+      data: students,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};

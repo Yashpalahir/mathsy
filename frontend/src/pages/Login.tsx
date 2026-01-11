@@ -1,253 +1,204 @@
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState, useEffect } from "react";
-import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Loader2, Mail, Lock, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Loader2, Phone, User, School, Camera } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { z } from "zod";
+import { auth } from "@/lib/firebase";
+import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import { apiClient } from "@/lib/api";
 
-/* ---------------- ZOD SCHEMAS ---------------- */
-
-const emailSchema = z.string().email("Please enter a valid email");
-const otpSchema = z.string().length(6, "OTP must be 6 digits");
-const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
-const nameSchema = z.string().min(2, "Name must be at least 2 characters");
-
-/* ---------------- COMPONENT ---------------- */
-
 const Login = () => {
-  const {
-    login,
-    signup,
-    sendOtp,
-    verifyOtp,
-    loginWithOtp,
-    loginWithGoogle,
-    educatorLogin,
-    isAuthenticated,
-    userType: currentUserType,
-    isLoading: authLoading,
-    user,
-    refreshUser
-  } = useAuth();
+  const { isAuthenticated, user, completeProfile, refreshUser } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
 
-  // Mode: login or signup
-  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
-
-  // Login Method: password or otp or educator
-  const [loginMethod, setLoginMethod] = useState<"password" | "otp" | "educator">("password");
-
-  // Signup Steps: 1=Email, 2=OTP, 2.5=Class Selection, 3=Details
-  const [signupStep, setSignupStep] = useState(1);
-
-  // Form State
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [otp, setOtp] = useState("");
-  const [selectedClass, setSelectedClass] = useState("");
-
+  // Step: 1=Phone, 2=OTP, 3=Profile Details
+  const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
 
-  /* ---------------- GOOGLE AUTH CALLBACK HANDLER ---------------- */
-  useEffect(() => {
-    const token = searchParams.get("token");
-    if (token && !isAuthenticated) {
-      handleTokenLogin(token);
-    }
-  }, [searchParams, isAuthenticated]);
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [selectedClass, setSelectedClass] = useState("");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleTokenLogin = async (token: string) => {
-    try {
-      setIsLoading(true);
-      apiClient.setToken(token);
-      await refreshUser();
-      toast.success("Logged in successfully");
-    } catch (error) {
-      console.error("Token login failed:", error);
-      toast.error("Authentication failed. Please try again.");
-      apiClient.setToken(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const [confirmationResult, setConfirmationResult] = useState(null);
+  const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
 
-  /* ---------------- AUTH CHECKS ---------------- */
+  /* ---------------- REDIRECT IF LOGGED IN ---------------- */
 
-  if (authLoading) {
-    return (
-      <Layout>
-        <div className="min-h-[60vh] flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </Layout>
-    );
-  }
-
-  // Redirect logic
-  if (isAuthenticated && user) {
-    console.log('🚪 [LOGIN PAGE] User already authenticated, redirecting...');
-    console.log('👤 [LOGIN PAGE] User role:', user.role);
-    console.log('👤 [LOGIN PAGE] Profile complete:', user.isProfileComplete);
-
-    if (user.role === "educator") {
-      return <Navigate to="/educator-welcome" replace />;
-    }
-    
-    // For students and other roles, check profile completion
-    if (user.isProfileComplete === false || user.isProfileComplete === undefined) {
-      console.log('🔀 [LOGIN PAGE] Redirecting to /create-profile');
-      return <Navigate to="/create-profile" replace />;
-    }
-
-    if (user.role === "admin") {
-      return <Navigate to="/admin" replace />;
-    }
-
-    console.log('🔀 [LOGIN PAGE] Redirecting to /student-dashboard');
+  if (isAuthenticated && user && user.isProfileComplete && step !== 3) {
+    if (user.role === "educator") return <Navigate to="/educator-welcome" replace />;
+    if (user.role === "admin") return <Navigate to="/admin" replace />;
     return <Navigate to="/student-dashboard" replace />;
   }
 
-  /* ---------------- HANDLERS ---------------- */
-
-  const handleGoogleLogin = () => {
-    console.log('\n🖱️ [FRONTEND] User clicked "Continue with Google" button');
-    setIsLoading(true);
-
-    // Get backend URL from environment variable
-    const apiUrl = import.meta.env.VITE_API_URL;
-    if (!apiUrl) {
-      toast.error("API URL is not configured");
-      setIsLoading(false);
-      return;
+  useEffect(() => {
+    if (isAuthenticated && user && !user.isProfileComplete) {
+      setStep(3);
     }
-    const backendUrl = apiUrl.replace('/api', ''); // Remove /api suffix to get base URL
+  }, [isAuthenticated, user?.isProfileComplete]);
 
-    const oauthUrl = `${backendUrl}/api/auth/google`;
-    console.log('🌐 [FRONTEND] Redirecting to backend OAuth URL:', oauthUrl);
+  /* ---------------- FIXED RECAPTCHA SETUP ---------------- */
 
-    // Redirect to backend Google Auth route
-    window.location.href = oauthUrl;
-  };
+  useEffect(() => {
+    if (!recaptchaVerifierRef.current) {
+      recaptchaVerifierRef.current = new RecaptchaVerifier(
+        auth,
+        "recaptcha-container",
+        {
+          size: "invisible",
+        }
+      );
 
-  const handleSendOtp = async () => {
-    const emailValidation = emailSchema.safeParse(email);
-    if (!emailValidation.success) {
-      toast.error(emailValidation.error.errors[0].message);
+      recaptchaVerifierRef.current.render().catch(console.error);
+    }
+  }, []);
+
+  /* ---------------- SEND OTP ---------------- */
+
+  const handleSendOtp = async (e) => {
+    e.preventDefault();
+
+    if (phone.length < 10) {
+      toast.error("Enter a valid phone number");
       return;
     }
 
     setIsLoading(true);
     try {
-      const { error, message } = await sendOtp(email);
-      if (error) {
-        toast.error(error);
-      } else {
-        toast.success(message || "OTP sent to your email");
-        setOtpSent(true);
-        if (authMode === "signup") setSignupStep(2);
+      let formattedPhone = phone.trim();
+      if (!formattedPhone.startsWith("+")) {
+        formattedPhone = `+91${formattedPhone}`;
       }
-    } catch {
-      toast.error("Failed to send OTP");
+
+      const confirmation = await signInWithPhoneNumber(
+        auth,
+        formattedPhone,
+        recaptchaVerifierRef.current!
+      );
+
+      setConfirmationResult(confirmation);
+      toast.success("OTP sent!");
+      setStep(2);
+    } catch (error: any) {
+      console.error("OTP Error:", error);
+      toast.error(error.message || "Failed to send OTP");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleLoginSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+  /* ---------------- VERIFY OTP ---------------- */
 
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+
+    if (!otp || otp.length !== 6) {
+      toast.error("Enter a valid 6-digit OTP");
+      return;
+    }
+
+    if (!confirmationResult) {
+      toast.error("Please request OTP first");
+      return;
+    }
+
+    setIsLoading(true);
     try {
-      if (loginMethod === "password") {
-        const { error } = await login(email, password);
-        if (error) toast.error(error);
-        else toast.success("Welcome back!");
-      } else if (loginMethod === "educator") {
-        console.log(`[FRONTEND] Submitting educator login for: ${email}`);
-        const { error } = await educatorLogin(email, password);
-        if (error) {
-          console.error(`[FRONTEND] Educator login error: ${error}`);
-          toast.error(error);
+      await confirmationResult.confirm(otp);
+
+      const response = await apiClient.verifyPhoneOtp(phone, "", true);
+
+      if (response.success && response.token) {
+        apiClient.setToken(response.token);
+        await refreshUser();
+        toast.success("OTP Verified!");
+
+        if (response.user && response.user.isProfileComplete) {
+          const role = response.user.role;
+          if (role === "educator") navigate("/educator-welcome", { replace: true });
+          else if (role === "admin") navigate("/admin", { replace: true });
+          else navigate("/student-dashboard", { replace: true });
         } else {
-          console.log(`[FRONTEND] Educator login successful!`);
-          toast.success("Welcome Educator!");
+          setStep(3);
         }
       } else {
-        // OTP Login
-        if (!otpSent) {
-          await handleSendOtp(); // User clicked login but hasn't sent OTP yet? 
-          // Actually UI should force send OTP first.
-          setIsLoading(false);
-          return;
-        }
-        const { error } = await loginWithOtp(email, otp);
-        if (error) toast.error(error);
-        else toast.success("Welcome back!");
+        toast.error(response.message || "Server error");
       }
-    } catch {
-      toast.error("Login failed");
+    } catch (error: any) {
+      console.error("OTP Verification Error:", error);
+      toast.error(error.message || "Invalid OTP");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSignupSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  /* ---------------- FILE HANDLING ---------------- */
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAvatarFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setAvatarPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  /* ---------------- SUBMIT PROFILE ---------------- */
+
+  const requestLocationAndSubmit = async () => {
     setIsLoading(true);
+    let location = null;
 
-    if (signupStep === 1) {
-      await handleSendOtp();
+    if ("geolocation" in navigator) {
+      try {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+        });
+        location = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        };
+      } catch {
+        console.warn("Location access denied");
+      }
+    }
+
+    const formData = new FormData();
+    formData.append("name", fullName);
+    formData.append("studentClass", selectedClass);
+    if (location) formData.append("location", JSON.stringify(location));
+    if (avatarFile) formData.append("avatar", avatarFile);
+
+    try {
+      const { error } = await completeProfile(formData);
+      if (error) toast.error(error);
+      else {
+        toast.success("Profile completed!");
+        navigate("/student-dashboard", { replace: true });
+      }
+    } catch {
+      toast.error("Profile save failed");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleProfileSubmit = (e) => {
+    e.preventDefault();
+
+    if (!fullName || !selectedClass) {
+      toast.error("Please fill all fields");
       return;
     }
 
-    if (signupStep === 2) {
-      // Verify OTP
-      if (otp.length !== 6) {
-        toast.error("Please enter 6-digit OTP");
-        setIsLoading(false);
-        return;
-      }
-
-      const { error, message } = await verifyOtp(email, otp);
-      if (error) {
-        toast.error(error);
-      } else {
-        toast.success(message || "Email verified!");
-        setSignupStep(2.5); // Move to class selection
-      }
-      setIsLoading(false);
-      return;
-    }
-
-    if (signupStep === 2.5) {
-      // Validate class selection
-      if (!selectedClass) {
-        toast.error("Please select your class");
-        setIsLoading(false);
-        return;
-      }
-      setSignupStep(3); // Move to name/password step
-      setIsLoading(false);
-      return;
-    }
-
-    if (signupStep === 3) {
-      const { error } = await signup(email, password, fullName, "student", selectedClass);
-      if (error) {
-        toast.error(error);
-      } else {
-        toast.success("Account created!");
-        // Redirect will happen automatically via AuthContext
-      }
-      setIsLoading(false);
-    }
+    requestLocationAndSubmit();
   };
 
   /* ---------------- UI ---------------- */
@@ -257,306 +208,137 @@ const Login = () => {
       <section className="py-20 bg-muted min-h-[80vh] flex items-center">
         <div className="container mx-auto px-4">
           <div className="max-w-md mx-auto bg-card rounded-2xl shadow-lg p-8">
-
-            {/* GOOGLE LOGIN HEADER */}
             <div className="text-center mb-8">
               <h1 className="font-display text-3xl font-bold text-foreground mb-4">
-                {authMode === "login" ? "Welcome Back" : "Get Started"}
+                {step === 1 ? "Login / Sign Up" : step === 2 ? "Verify OTP" : "Complete Profile"}
               </h1>
-
-              <Button
-                variant="outline"
-                className="w-full py-6 flex items-center justify-center gap-3 text-base font-medium mb-6 hover:bg-muted/50 transition-colors"
-                onClick={handleGoogleLogin}
-                disabled={isLoading}
-              >
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                </svg>
-                Continue with Google
-              </Button>
-
-              <div className="relative mb-6">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border"></span>
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
-                </div>
-              </div>
-
-              {/* TABS (Only for Login) */}
-              {authMode === "login" && (
-                <div className="flex p-1 bg-muted rounded-lg mb-6">
-                  <button
-                    className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${loginMethod === "password" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    onClick={() => setLoginMethod("password")}
-                  >
-                    Password
-                  </button>
-                  <button
-                    className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${loginMethod === "otp" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    onClick={() => {
-                      setLoginMethod("otp");
-                      setOtpSent(false); // Reset OTP state when switching
-                    }}
-                  >
-                    OTP
-                  </button>
-                </div>
-              )}
+              <p className="text-muted-foreground">
+                {step === 1
+                  ? "Enter your phone number to continue"
+                  : step === 2
+                    ? `Enter the OTP sent to ${phone}`
+                    : "Tell us about yourself"}
+              </p>
             </div>
 
-            {/* FORMS */}
-            <form onSubmit={authMode === "login" ? handleLoginSubmit : handleSignupSubmit} className="space-y-4">
+            {/* Recaptcha Container */}
+            <div id="recaptcha-container"></div>
 
-              {/* LOGIN: PASSWORD OR EDUCATOR MODE */}
-              {authMode === "login" && (loginMethod === "password" || loginMethod === "educator") && (
-                <>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">
-                      {loginMethod === "educator" ? "Educator Email" : "Email Address"}
-                    </label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="you@example.com"
-                        className="pl-9"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                      />
-                    </div>
+            {/* STEP 1: PHONE */}
+            {step === 1 && (
+              <form onSubmit={handleSendOtp} className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Phone Number</label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      placeholder="9876543210"
+                      className="pl-10"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      maxLength={10}
+                    />
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Password</label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        type="password"
-                        placeholder="••••••••"
-                        className="pl-9"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <Button type="submit" className="w-full" disabled={isLoading} variant="hero">
-                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : loginMethod === "educator" ? "Login as Educator" : "Login"}
-                  </Button>
-                </>
-              )}
-
-              {/* LOGIN: OTP MODE */}
-              {authMode === "login" && loginMethod === "otp" && (
-                <>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Email Address</label>
-                    <div className="flex gap-2">
-                      <div className="relative flex-1">
-                        <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          placeholder="you@example.com"
-                          className="pl-9"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          disabled={otpSent}
-                        />
-                      </div>
-                      {!otpSent && (
-                        <Button type="button" onClick={handleSendOtp} disabled={isLoading || !email}>
-                          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send OTP"}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-
-                  {otpSent && (
-                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                      <label className="text-sm font-medium">Enter OTP</label>
-                      <Input
-                        placeholder="123456"
-                        className="text-center tracking-widest text-lg"
-                        maxLength={6}
-                        value={otp}
-                        onChange={(e) => setOtp(e.target.value)}
-                      />
-                      <Button type="submit" className="w-full mt-4" disabled={isLoading} variant="hero">
-                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify & Login"}
-                      </Button>
-                      <button
-                        type="button"
-                        className="text-xs text-primary hover:underline text-center w-full mt-2"
-                        onClick={() => setOtpSent(false)}
-                      >
-                        Change Email / Resend
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* SIGNUP FLOW */}
-              {authMode === "signup" && (
-                <>
-                  {/* STEP 1: Email */}
-                  {signupStep === 1 && (
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Email Address</label>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            placeholder="you@example.com"
-                            className="pl-9"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                          />
-                        </div>
-                      </div>
-                      <Button type="submit" className="w-full" disabled={isLoading}>
-                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send OTP"}
-                      </Button>
-                    </div>
-                  )}
-
-                  {/* STEP 2: OTP */}
-                  {signupStep === 2 && (
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Verify Email</label>
-                        <p className="text-xs text-muted-foreground">OTP sent to {email}</p>
-                        <Input
-                          placeholder="123456"
-                          className="text-center tracking-widest text-lg"
-                          maxLength={6}
-                          value={otp}
-                          onChange={(e) => setOtp(e.target.value)}
-                        />
-                      </div>
-                      <Button type="submit" className="w-full" disabled={isLoading}>
-                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify OTP"}
-                      </Button>
-                    </div>
-                  )}
-
-                  {/* STEP 2.5: Class Selection */}
-                  {signupStep === 2.5 && (
-                    <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
-                      <div className="p-3 bg-green-50 text-green-700 text-sm rounded-lg flex items-center gap-2 mb-4">
-                        <CheckCircle2 className="w-4 h-4" /> Email Verified
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Select Your Class</label>
-                        <p className="text-xs text-muted-foreground">Choose the class you're currently studying in</p>
-                        <select
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                          value={selectedClass}
-                          onChange={(e) => setSelectedClass(e.target.value)}
-                        >
-                          <option value="">-- Select Class --</option>
-                          <option value="Class 6">Class 6</option>
-                          <option value="Class 7">Class 7</option>
-                          <option value="Class 8">Class 8</option>
-                          <option value="Class 9">Class 9</option>
-                          <option value="Class 10">Class 10</option>
-                        </select>
-                      </div>
-                      <Button type="submit" className="w-full" disabled={isLoading} variant="hero">
-                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Continue"}
-                      </Button>
-                    </div>
-                  )}
-
-                  {/* STEP 3: Details */}
-                  {signupStep === 3 && (
-                    <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
-                      <div className="p-3 bg-green-50 text-green-700 text-sm rounded-lg flex items-center gap-2 mb-4">
-                        <CheckCircle2 className="w-4 h-4" /> Email Verified
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Full Name</label>
-                        <Input
-                          placeholder="John Doe"
-                          value={fullName}
-                          onChange={(e) => setFullName(e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Create Password</label>
-                        <Input
-                          type="password"
-                          placeholder="••••••••"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                        />
-                      </div>
-                      <Button type="submit" className="w-full" disabled={isLoading} variant="hero">
-                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Account"}
-                      </Button>
-                    </div>
-                  )}
-                </>
-              )}
-
-            </form>
-
-            <div className="mt-8 text-center text-sm">
-              {authMode === "login" ? (
-                <p className="text-muted-foreground">
-                  Don't have an account?{" "}
-                  <button
-                    onClick={() => {
-                      setAuthMode("signup");
-                      setSignupStep(1);
-                      setOtpSent(false);
-                      setEmail("");
-                    }}
-                    className="text-primary font-medium hover:underline"
-                  >
-                    Sign up
-                  </button>
-                </p>
-              ) : (
-                <p className="text-muted-foreground">
-                  Already have an account?{" "}
-                  <button
-                    onClick={() => {
-                      setAuthMode("login");
-                      setLoginMethod("password");
-                    }}
-                    className="text-primary font-medium hover:underline"
-                  >
-                    Log in
-                  </button>
-                </p>
-              )}
-
-              {/* educator LOGIN OPTION (Only for Login Mode) */}
-              {authMode === "login" && (
-                <div className="mt-4 pt-4 border-t border-border">
-                  <button
-                    onClick={() => {
-                      if (loginMethod === "educator") {
-                        setLoginMethod("password");
-                      } else {
-                        setLoginMethod("educator");
-                      }
-                      setEmail("");
-                      setPassword("");
-                    }}
-                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    {loginMethod === "educator" ? "Back to Student Login" : "Login as Educator"}
-                  </button>
                 </div>
-              )}
-            </div>
+                <Button type="submit" disabled={isLoading} className="w-full" variant="hero">
+                  {isLoading ? <Loader2 className="animate-spin h-4 w-4" /> : "Continue"}
+                </Button>
+              </form>
+            )}
 
+            {/* STEP 2: OTP */}
+            {step === 2 && (
+              <form onSubmit={handleVerifyOtp} className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">One-Time Password</label>
+                  <Input
+                    placeholder="123456"
+                    className="text-center tracking-widest text-lg h-12"
+                    maxLength={6}
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                  />
+                </div>
+                <Button type="submit" disabled={isLoading} className="w-full" variant="hero">
+                  {isLoading ? <Loader2 className="animate-spin h-4 w-4" /> : "Verify & Continue"}
+                </Button>
+
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="w-full text-sm text-primary hover:underline"
+                >
+                  Change Phone Number
+                </button>
+              </form>
+            )}
+
+            {/* STEP 3: PROFILE */}
+            {step === 3 && (
+              <form onSubmit={handleProfileSubmit} className="space-y-6">
+                {/* Avatar Upload */}
+                <div className="flex flex-col items-center">
+                  <div
+                    className="relative w-24 h-24 rounded-full bg-muted flex items-center justify-center overflow-hidden border-2 border-primary/20 cursor-pointer group"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {avatarPreview ? (
+                      <img src={avatarPreview} className="w-full h-full object-cover" />
+                    ) : (
+                      <Camera className="w-8 h-8 text-muted-foreground group-hover:text-primary" />
+                    )}
+                  </div>
+
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                  />
+
+                  <p className="text-xs text-muted-foreground mt-2">Upload Profile Image</p>
+                </div>
+
+                {/* Name */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Full Name</label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      placeholder="John Doe"
+                      className="pl-10"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Class */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Select Class</label>
+                  <div className="relative">
+                    <School className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                    <select
+                      className="flex h-10 w-full rounded-md border border-input bg-background pl-10 pr-3 py-2 text-sm"
+                      value={selectedClass}
+                      onChange={(e) => setSelectedClass(e.target.value)}
+                    >
+                      <option value="">-- Choose Class --</option>
+                      {[6, 7, 8, 9, 10, 11, 12].map((num) => (
+                        <option key={num} value={`Class ${num}`}>
+                          Class {num}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <Button type="submit" disabled={isLoading} className="w-full" variant="hero">
+                  {isLoading ? <Loader2 className="animate-spin h-4 w-4" /> : "Save & Finish"}
+                </Button>
+              </form>
+            )}
           </div>
         </div>
       </section>

@@ -1,7 +1,7 @@
 import { Layout } from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LogOut, QrCode, Camera, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { LogOut, QrCode, Camera, CheckCircle2, XCircle, Loader2, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import QrReader from "react-qr-scanner";
@@ -11,8 +11,13 @@ import { toast } from "react-toastify";
 const EducatorWelcome = () => {
     const { user, logout } = useAuth();
     const [isScanning, setIsScanning] = useState(false);
+    const [facingMode, setFacingMode] = useState<'front' | 'rear'>('rear');
     const [scanResult, setScanResult] = useState<{ success: boolean; message: string } | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
+
+    const toggleCamera = () => {
+        setFacingMode(prev => prev === 'front' ? 'rear' : 'front');
+    };
 
     const handleScan = async (data: string | null) => {
         if (data && !isProcessing) {
@@ -67,11 +72,11 @@ const EducatorWelcome = () => {
                                 <QrCode className="w-5 h-5 text-primary" />
                                 Attendance System
                             </h3>
-                            
+
                             {!isScanning ? (
-                                <Button 
+                                <Button
                                     onClick={() => setIsScanning(true)}
-                                    variant="hero" 
+                                    variant="hero"
                                     className="w-full flex items-center gap-2"
                                 >
                                     <Camera className="w-4 h-4" />
@@ -91,10 +96,22 @@ const EducatorWelcome = () => {
                                                     handleScan(data.text);
                                                 }
                                             }}
-                                            facingMode="rear"
+                                            facingMode={facingMode}
                                             style={{ width: '100%' }}
                                         />
-                                        
+
+                                        {/* Camera Rotation Button */}
+                                        <div className="absolute top-4 right-4 z-20">
+                                            <Button
+                                                onClick={toggleCamera}
+                                                variant="secondary"
+                                                size="icon"
+                                                className="rounded-full bg-white/20 hover:bg-white/40 backdrop-blur-md border-white/30 text-white"
+                                            >
+                                                <RefreshCw className="w-5 h-5" />
+                                            </Button>
+                                        </div>
+
                                         {/* Scanning Overlay */}
                                         <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
                                             <div className="w-48 h-48 border-2 border-white/50 rounded-lg relative overflow-hidden">
@@ -105,13 +122,12 @@ const EducatorWelcome = () => {
                                         {/* Result Overlay */}
                                         <AnimatePresence>
                                             {scanResult && (
-                                                <motion.div 
+                                                <motion.div
                                                     initial={{ opacity: 0 }}
                                                     animate={{ opacity: 1 }}
                                                     exit={{ opacity: 0 }}
-                                                    className={`absolute inset-0 flex flex-col items-center justify-center p-4 text-white z-10 ${
-                                                        scanResult.success ? 'bg-green-600/90' : 'bg-red-600/90'
-                                                    }`}
+                                                    className={`absolute inset-0 flex flex-col items-center justify-center p-4 text-white z-10 ${scanResult.success ? 'bg-green-600/90' : 'bg-red-600/90'
+                                                        }`}
                                                 >
                                                     {scanResult.success ? (
                                                         <CheckCircle2 className="w-16 h-16 mb-2" />
@@ -128,9 +144,9 @@ const EducatorWelcome = () => {
                                             )}
                                         </AnimatePresence>
                                     </div>
-                                    <Button 
+                                    <Button
                                         onClick={() => setIsScanning(false)}
-                                        variant="outline" 
+                                        variant="outline"
                                         className="w-full"
                                     >
                                         Cancel Scanning

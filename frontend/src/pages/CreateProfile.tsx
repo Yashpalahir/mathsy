@@ -4,15 +4,15 @@ import { Input } from "@/components/ui/input";
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { 
-    Loader2, 
-    User, 
-    MapPin, 
-    School, 
-    Camera, 
-    Phone, 
-    Send, 
-    CheckCircle2, 
+import {
+    Loader2,
+    User,
+    MapPin,
+    School,
+    Camera,
+    Phone,
+    Send,
+    CheckCircle2,
     Navigation,
     Edit2
 } from "lucide-react";
@@ -34,9 +34,9 @@ const profileSchema = z.object({
 /* ---------------- COMPONENT ---------------- */
 
 const CreateProfile = () => {
-    const { profile, user, logout } = useAuth();
+    const { profile, user, logout, completeProfile } = useAuth();
     const navigate = useNavigate();
-    
+
     const [isLoading, setIsLoading] = useState(false);
     const [isDetectingLocation, setIsDetectingLocation] = useState(false);
     const [isSendingOtp, setIsSendingOtp] = useState(false);
@@ -90,15 +90,23 @@ const CreateProfile = () => {
 
         try {
             setIsSendingOtp(true);
-            
-            if (!recaptchaVerifierRef.current) {
-                recaptchaVerifierRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
-                    'size': 'invisible',
-                    'callback': () => {
-                        console.log('reCAPTCHA verified');
-                    }
-                });
+
+            // Clean up existing recaptcha if any
+            if (recaptchaVerifierRef.current) {
+                try {
+                    recaptchaVerifierRef.current.clear();
+                } catch (e) {
+                    console.warn("Error clearing recaptcha:", e);
+                }
+                recaptchaVerifierRef.current = null;
             }
+
+            recaptchaVerifierRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
+                'size': 'invisible',
+                'callback': () => {
+                    console.log('reCAPTCHA verified');
+                }
+            });
 
             let formattedPhone = phone.trim();
             if (!formattedPhone.startsWith('+')) {
@@ -107,7 +115,7 @@ const CreateProfile = () => {
 
             const confirmation = await signInWithPhoneNumber(auth, formattedPhone, recaptchaVerifierRef.current);
             setConfirmationResult(confirmation);
-            
+
             setShowOtpInput(true);
             setResendTimer(30); // 30 seconds cooldown
             toast.success("OTP sent to your phone!");
@@ -142,13 +150,13 @@ const CreateProfile = () => {
 
         try {
             setIsVerifyingOtp(true);
-            
+
             // 1. Verify with Firebase
             await confirmationResult.confirm(otp);
-            
+
             // 2. Notify backend to mark as verified in our DB
             const response = await apiClient.verifyWhatsAppOtp("verified_by_firebase");
-            
+
             if (response.success) {
                 setIsPhoneVerified(true);
                 setShowOtpInput(false);
@@ -221,10 +229,14 @@ const CreateProfile = () => {
         }
 
         try {
-            const response = await apiClient.completeProfile(formData);
-            if (response.success) {
+            const result = await completeProfile(formData);
+            if (!result.error) {
                 toast.success("Profile updated successfully!");
-                navigate("/student-dashboard", { replace: true });
+                // Redirect based on role if available, otherwise default to student dashboard
+                const redirectPath = user?.role === 'parent' ? "/parent-dashboard" : "/student-dashboard";
+                navigate(redirectPath, { replace: true });
+            } else {
+                toast.error(result.error);
             }
         } catch (error: any) {
             toast.error(error.message || "Failed to update profile");
@@ -252,7 +264,7 @@ const CreateProfile = () => {
 
                                 {/* AVATAR INPUT */}
                                 <div className="flex flex-col items-center mb-6">
-                                    <div 
+                                    <div
                                         className="relative w-24 h-24 rounded-full bg-muted flex items-center justify-center overflow-hidden border-2 border-primary/20 cursor-pointer group"
                                         onClick={() => fileInputRef.current?.click()}
                                     >
@@ -265,11 +277,11 @@ const CreateProfile = () => {
                                             <Camera className="w-6 h-6 text-white" />
                                         </div>
                                     </div>
-                                    <input 
-                                        type="file" 
-                                        ref={fileInputRef} 
-                                        className="hidden" 
-                                        accept="image/*" 
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        className="hidden"
+                                        accept="image/*"
                                         onChange={handleFileChange}
                                     />
                                     <p className="text-xs text-muted-foreground mt-2">Click to upload profile photo</p>
@@ -308,8 +320,8 @@ const CreateProfile = () => {
                                             />
                                         </div>
                                         {!isPhoneVerified && !showOtpInput && (
-                                            <Button 
-                                                type="button" 
+                                            <Button
+                                                type="button"
                                                 variant="outline"
                                                 onClick={handleSendOtp}
                                                 disabled={isSendingOtp}
@@ -318,8 +330,8 @@ const CreateProfile = () => {
                                             </Button>
                                         )}
                                         {!isPhoneVerified && showOtpInput && (
-                                            <Button 
-                                                type="button" 
+                                            <Button
+                                                type="button"
                                                 variant="ghost"
                                                 size="icon"
                                                 onClick={handleEditPhone}
@@ -358,8 +370,8 @@ const CreateProfile = () => {
                                                 onChange={(e) => setOtp(e.target.value)}
                                                 maxLength={6}
                                             />
-                                            <Button 
-                                                type="button" 
+                                            <Button
+                                                type="button"
                                                 variant="hero"
                                                 onClick={handleVerifyOtp}
                                                 disabled={isVerifyingOtp}
@@ -397,7 +409,7 @@ const CreateProfile = () => {
                                         <label className="block text-sm font-medium text-foreground">
                                             Address
                                         </label>
-                                        <button 
+                                        <button
                                             type="button"
                                             className="text-xs text-primary flex items-center gap-1 hover:underline"
                                             onClick={detectLocation}

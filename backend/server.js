@@ -73,6 +73,7 @@ import courseVideoRoutes from './routes/courseVideoRoutes.js';
 import feeStatusRoutes from './routes/feeStatusRoutes.js';
 import attendanceRoutes from './routes/attendanceRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
+import uploadRoutes from './routes/uploadRoutes.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/courses', courseRoutes);
@@ -88,6 +89,7 @@ app.use('/api/course-videos', courseVideoRoutes);
 app.use('/api/fee-status', feeStatusRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/upload', uploadRoutes);
 
 /* ------------ Health Check ------------ */
 app.get('/api/health', (req, res) => {

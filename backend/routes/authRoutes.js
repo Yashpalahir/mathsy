@@ -1,5 +1,5 @@
 import express from 'express';
-import { register, login, getMe, sendOtp, loginWithOtp, completeProfile, verifyOtp, googleAuth, educatorLogin, sendWhatsAppOtp, verifyWhatsAppOtp } from '../controllers/authController.js';
+import { register, login, getMe, sendOtp, loginWithOtp, completeProfile, verifyOtp, googleAuth, educatorLogin, sendWhatsAppOtp, verifyWhatsAppOtp, sendPhoneOtp, verifyPhoneOtp } from '../controllers/authController.js';
 import { protect } from '../middleware/auth.js';
 import passport from 'passport';
 import generateToken from '../utils/generateToken.js';
@@ -20,6 +20,8 @@ router.post('/educator-login', educatorLogin);
 router.post('/send-otp', sendOtp);
 router.post('/verify-otp', verifyOtp);
 router.post('/login-otp', loginWithOtp);
+router.post('/send-phone-otp', sendPhoneOtp);
+router.post('/verify-phone-otp', verifyPhoneOtp);
 router.post('/google', googleAuth);
 
 

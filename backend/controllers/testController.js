@@ -1,13 +1,14 @@
 import Test from '../models/Test.js';
 import TestResult from '../models/TestResult.js';
 import Enrollment from '../models/Enrollment.js';
+import { getExplanation, evaluateSubjective } from '../utils/gemini.js';
 
 // @desc    Create test
 // @route   POST /api/tests
 // @access  Private/Admin
 export const createTest = async (req, res) => {
   try {
-    const { name, class: testClass, description, questions, duration, passingMarks } = req.body;
+    const { name, class: testClass, description, questions, duration, passingMarks, course } = req.body;
 
     // Validation
     if (!name || !testClass || !questions || !Array.isArray(questions) || questions.length === 0) {
@@ -20,17 +21,26 @@ export const createTest = async (req, res) => {
     // Validate questions
     for (let i = 0; i < questions.length; i++) {
       const q = questions[i];
-      if (!q.question || !q.options || !Array.isArray(q.options) || q.options.length !== 4) {
+      if (!q.question) {
         return res.status(400).json({
           success: false,
-          message: `Question ${i + 1}: Please provide question and exactly 4 options`,
+          message: `Question ${i + 1}: Please provide a question`,
         });
       }
-      if (q.correctAnswer === undefined || q.correctAnswer < 0 || q.correctAnswer > 3) {
-        return res.status(400).json({
-          success: false,
-          message: `Question ${i + 1}: Please provide correct answer index (0-3)`,
-        });
+
+      if (q.type === 'mcq') {
+        if (!q.options || !Array.isArray(q.options) || q.options.length !== 4) {
+          return res.status(400).json({
+            success: false,
+            message: `Question ${i + 1}: MCQ requires exactly 4 options`,
+          });
+        }
+        if (q.correctAnswer === undefined || q.correctAnswer < 0 || q.correctAnswer > 3) {
+          return res.status(400).json({
+            success: false,
+            message: `Question ${i + 1}: Please provide correct answer index (0-3)`,
+          });
+        }
       }
     }
 
@@ -38,11 +48,20 @@ export const createTest = async (req, res) => {
     const testData = {
       name: name.trim(),
       class: testClass.trim(),
+      course: course || null,
+      targetUsers: req.body.targetUsers || [],
       description: description ? description.trim() : '',
       questions: questions.map(q => ({
+        type: q.type || 'mcq',
         question: q.question.trim(),
-        options: q.options.map(opt => typeof opt === 'string' ? opt.trim() : opt),
-        correctAnswer: q.correctAnswer,
+        image: q.image || '',
+        video: q.video || '',
+        options: q.type === 'mcq' ? (q.options || []).map(opt => ({
+          text: typeof opt === 'string' ? opt.trim() : (opt.text || '').trim(),
+          image: opt.image || ''
+        })) : [],
+        correctAnswer: q.type === 'mcq' ? q.correctAnswer : null,
+        explanation: q.explanation || '',
         marks: q.marks || 1,
       })),
       duration: duration || 60,
@@ -59,7 +78,7 @@ export const createTest = async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating test:', error);
-    
+
     // Handle Mongoose validation errors
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message).join(', ');
@@ -68,7 +87,7 @@ export const createTest = async (req, res) => {
         message: `Validation error: ${messages}`,
       });
     }
-    
+
     res.status(500).json({
       success: false,
       message: error.message || 'Server error',
@@ -83,10 +102,10 @@ export const getTests = async (req, res) => {
   try {
     let query = { isActive: true };
 
-    // If user is student, only show tests for classes they are enrolled in
+    // If user is student, only show tests for classes they are enrolled in OR if they are specifically targeted
     if (req.user.role === 'student') {
       // Get user's enrollments to find their enrolled classes
-      const enrollments = await Enrollment.find({ 
+      const enrollments = await Enrollment.find({
         student: req.user.id,
         status: { $in: ['active', 'pending'] }
       }).populate('course', 'grade');
@@ -98,26 +117,45 @@ export const getTests = async (req, res) => {
           .filter(Boolean)
       )];
 
-      if (enrolledClasses.length > 0) {
-        // Only show tests for classes the student is enrolled in
-        query = { 
-          isActive: true,
-          class: { $in: enrolledClasses }
-        };
-      } else {
-        // If student has no enrollments, show no tests
-        query = { isActive: true, class: '__NO_CLASS__' }; // This will return empty
+      query = {
+        isActive: true,
+        $or: [
+          { class: { $in: enrolledClasses } },
+          { course: { $in: enrollments.map(e => e.course?._id).filter(Boolean) } },
+          { targetUsers: req.user.id }
+        ]
+      };
+
+      // If student has no enrollments and not targeted, only show if class matches profile
+      if (enrolledClasses.length === 0 && query.$or[1].targetUsers !== req.user.id) {
+        // Fallback to user profile class if available
+        // This depends on where studentClass is stored. 
+        // Assuming it might be handled by middleware or profile model.
       }
     }
 
     const tests = await Test.find(query)
-      .select('-questions.options -questions.correctAnswer') // Don't send answers to students
+      .select('-questions.correctAnswer') // Don't send answers to students
       .sort({ createdAt: -1 });
+
+    let testsWithStatus = tests;
+    if (req.user.role === 'student') {
+      const results = await TestResult.find({ student: req.user.id });
+      const attemptedTestIds = results.map(r => r.test.toString());
+
+      testsWithStatus = tests.map(test => {
+        const testObj = test.toObject();
+        const result = results.find(r => r.test.toString() === test._id.toString());
+        testObj.isAttempted = !!result;
+        testObj.isEvaluated = result ? result.isEvaluated : false;
+        return testObj;
+      });
+    }
 
     res.status(200).json({
       success: true,
-      count: tests.length,
-      data: tests,
+      count: testsWithStatus.length,
+      data: testsWithStatus,
     });
   } catch (error) {
     console.error('Error fetching tests:', error);
@@ -189,7 +227,10 @@ export const getTest = async (req, res) => {
     const testData = test.toObject();
     if (req.user.role === 'student') {
       testData.questions = testData.questions.map(q => ({
+        type: q.type,
         question: q.question,
+        image: q.image,
+        video: q.video,
         options: q.options,
         marks: q.marks,
       }));
@@ -248,16 +289,30 @@ export const submitTest = async (req, res) => {
     // Evaluate answers
     const evaluatedAnswers = test.questions.map((question, index) => {
       const userAnswer = answers.find(a => a.questionIndex === index);
-      const selectedAnswer = userAnswer ? userAnswer.selectedAnswer : -1;
-      const isCorrect = selectedAnswer === question.correctAnswer;
-      const marksObtained = isCorrect ? (question.marks || 1) : 0;
 
-      return {
-        questionIndex: index,
-        selectedAnswer,
-        isCorrect,
-        marksObtained,
-      };
+      if (question.type === 'mcq') {
+        const selectedAnswer = userAnswer ? userAnswer.selectedAnswer : -1;
+        const isCorrect = selectedAnswer === question.correctAnswer;
+        const marksObtained = isCorrect ? (question.marks || 1) : 0;
+
+        return {
+          questionIndex: index,
+          selectedAnswer,
+          isCorrect,
+          marksObtained,
+          explanation: question.explanation || ''
+        };
+      } else {
+        // Subjective: store with placeholder, evaluation happens in background
+        return {
+          questionIndex: index,
+          subjectiveAnswer: userAnswer ? userAnswer.subjectiveAnswer : '',
+          isCorrect: false,
+          marksObtained: 0,
+          feedback: 'AI Evaluation in progress...',
+          explanation: ''
+        };
+      }
     });
 
     const obtainedMarks = evaluatedAnswers.reduce((sum, ans) => sum + ans.marksObtained, 0);
@@ -270,35 +325,84 @@ export const submitTest = async (req, res) => {
       answers: evaluatedAnswers,
       totalMarks: test.totalMarks,
       obtainedMarks,
-      percentage: Math.round(percentage * 100) / 100,
+      percentage,
       status,
       timeTaken: timeTaken || 0,
     });
 
-    const populatedResult = await TestResult.findById(testResult._id)
-      .populate({
-        path: 'test',
-        select: 'name class description questions totalMarks passingMarks duration',
-      })
-      .populate('student', 'name email');
+    // Run background evaluation if there are subjective questions or missing explanations
+    const hasSubjective = test.questions.some(q => q.type === 'subjective');
+    const missingExplanations = test.questions.some(q => !q.explanation);
 
-    res.status(201).json({
+    if (hasSubjective || missingExplanations) {
+      evaluateTestInBackground(test, testResult.id);
+    } else {
+      testResult.isEvaluated = true;
+      await testResult.save();
+    }
+
+    res.status(200).json({
       success: true,
-      message: 'Test submitted successfully',
-      data: populatedResult,
+      message: 'Test submitted successfully. Evaluation is in progress.',
+      data: testResult,
     });
   } catch (error) {
-    if (error.code === 11000) {
-      return res.status(400).json({
-        success: false,
-        message: 'You have already submitted this test',
-      });
-    }
-    console.error('Error submitting test:', error);
+    console.error('Test Submission Error:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'Server error',
     });
+  }
+};
+
+// Helper for background evaluation
+const evaluateTestInBackground = async (test, resultId) => {
+  try {
+    const result = await TestResult.findById(resultId);
+    if (!result) return;
+
+    const evaluatedAnswers = await Promise.all(test.questions.map(async (question, index) => {
+      const currentAnswer = result.answers.find(a => a.questionIndex === index);
+
+      if (question.type === 'mcq') {
+        let explanation = question.explanation;
+        if (!explanation) {
+          explanation = await getExplanation(question.question, question.options, question.correctAnswer, 'mcq');
+        }
+        return { ...currentAnswer.toObject(), explanation };
+      } else {
+        const evaluation = await evaluateSubjective(question.question, currentAnswer.subjectiveAnswer);
+        const marksObtained = (evaluation.score / 10) * (question.marks || 1);
+
+        let solution = question.explanation;
+        if (!solution) {
+          solution = await getExplanation(question.question, [], null, 'subjective');
+        }
+
+        return {
+          ...currentAnswer.toObject(),
+          isCorrect: evaluation.score >= 5,
+          marksObtained,
+          feedback: `${evaluation.feedback}\n\nSuggestions: ${evaluation.suggestions}`,
+          explanation: solution
+        };
+      }
+    }));
+
+    const totalObtainedMarks = evaluatedAnswers.reduce((sum, ans) => sum + ans.marksObtained, 0);
+    const percentage = (totalObtainedMarks / result.totalMarks) * 100;
+    const status = percentage >= (test.passingMarks || 0) ? 'passed' : 'failed';
+
+    result.answers = evaluatedAnswers;
+    result.obtainedMarks = totalObtainedMarks;
+    result.percentage = percentage;
+    result.status = status;
+    result.isEvaluated = true;
+    await result.save();
+
+    console.log(`Background evaluation completed for Result ID: ${resultId}`);
+  } catch (error) {
+    console.error(`Background Evaluation Error (Result ID: ${resultId}):`, error);
   }
 };
 
@@ -347,7 +451,7 @@ export const getTestResult = async (req, res) => {
 // @access  Private/Admin
 export const updateTest = async (req, res) => {
   try {
-    const { name, class: testClass, description, questions, duration, passingMarks, isActive } = req.body;
+    const { name, class: testClass, description, questions, duration, passingMarks, isActive, course } = req.body;
 
     let test = await Test.findById(req.params.id);
 
@@ -362,24 +466,22 @@ export const updateTest = async (req, res) => {
     if (testClass) test.class = testClass.trim();
     if (description !== undefined) test.description = description.trim();
     if (questions) {
-      // Validate questions
-      for (let i = 0; i < questions.length; i++) {
-        const q = questions[i];
-        if (!q.question || !q.options || !Array.isArray(q.options) || q.options.length !== 4) {
-          return res.status(400).json({
-            success: false,
-            message: `Question ${i + 1}: Please provide question and exactly 4 options`,
-          });
-        }
-        if (q.correctAnswer === undefined || q.correctAnswer < 0 || q.correctAnswer > 3) {
-          return res.status(400).json({
-            success: false,
-            message: `Question ${i + 1}: Please provide correct answer index (0-3)`,
-          });
-        }
-      }
-      test.questions = questions;
+      test.questions = questions.map(q => ({
+        type: q.type || 'mcq',
+        question: q.question.trim(),
+        image: q.image || '',
+        video: q.video || '',
+        options: q.type === 'mcq' ? (q.options || []).map(opt => ({
+          text: typeof opt === 'string' ? opt.trim() : (opt.text || '').trim(),
+          image: opt.image || ''
+        })) : [],
+        correctAnswer: q.type === 'mcq' ? q.correctAnswer : null,
+        explanation: q.explanation || '',
+        marks: q.marks || 1,
+      }));
     }
+    if (req.body.targetUsers) test.targetUsers = req.body.targetUsers;
+    if (course !== undefined) test.course = course || null;
     if (duration !== undefined) test.duration = duration;
     if (passingMarks !== undefined) test.passingMarks = passingMarks;
     if (isActive !== undefined) test.isActive = isActive;

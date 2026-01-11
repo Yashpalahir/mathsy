@@ -62,14 +62,17 @@ export interface StudyMaterial {
   title: string;
   description?: string;
   category: string;
-  grade: string;
+  class: string;
   pages: number;
   questions: number;
   year?: string;
+  isEnrolled?: boolean;
   course?: {
     _id: string;
     title: string;
     class: string;
+    description?: string;
+    price?: number;
   };
 }
 
@@ -87,6 +90,7 @@ const StudyMaterials = () => {
   const [materials, setMaterials] = useState<StudyMaterial[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPdf, setSelectedPdf] = useState<string | null>(null);
+  const [enrollCourse, setEnrollCourse] = useState<StudyMaterial['course'] | null>(null);
 
   // PDF state
   const [numPages, setNumPages] = useState<number | null>(null);
@@ -232,7 +236,7 @@ const StudyMaterials = () => {
                         </h3>
 
                         <p className="text-sm text-muted-foreground mb-4">
-                          {item.grade} • {item.course?.title || "General"}
+                          {item.class} • {item.course?.title || "General"}
                           {item.pages > 0 && ` • ${item.pages} pages `}
                           {item.questions > 0 &&
                             ` • ${item.questions} questions `}
@@ -240,16 +244,25 @@ const StudyMaterials = () => {
                         </p>
 
                         {isAuthenticated ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full"
-                            onClick={() =>
-                              handleViewPdf(item._id)
-                            }
-                          >
-                            View PDF
-                          </Button>
+                          item.isEnrolled ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                              onClick={() => handleViewPdf(item._id)}
+                            >
+                              View PDF
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="hero"
+                              size="sm"
+                              className="w-full"
+                              onClick={() => setEnrollCourse(item.course || null)}
+                            >
+                              Enroll in {item.course?.title || "Course"}
+                            </Button>
+                          )
                         ) : (
                           <Button
                             variant="outline"
@@ -422,6 +435,38 @@ const StudyMaterials = () => {
               className="absolute inset-0 bg-transparent pointer-events-none"
               onContextMenu={(e) => e.preventDefault()}
             />
+          </div>
+        </DialogContent>
+      </Dialog>
+      {/* ENROLL DIALOG */}
+      <Dialog open={!!enrollCourse} onOpenChange={(open) => !open && setEnrollCourse(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Enroll in {enrollCourse?.title}</DialogTitle>
+            <DialogDescription>
+              You need to enroll in this course to access its study materials.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="flex flex-col gap-1">
+              <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Target Class</span>
+              <span className="text-lg font-bold text-primary">{enrollCourse?.class}</span>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Course Name</span>
+              <p className="text-sm">{enrollCourse?.title}</p>
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 mt-4">
+            <Button variant="outline" onClick={() => setEnrollCourse(null)}>
+              Cancel
+            </Button>
+            <Button variant="hero" onClick={() => {
+              // Redirect to course page or show enrollment logic
+              window.location.href = `/courses`;
+            }}>
+              Go to Courses
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

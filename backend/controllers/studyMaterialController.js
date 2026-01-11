@@ -27,7 +27,6 @@ export const upload = multer({
 // @access  Public
 export const getStudyMaterials = async (req, res) => {
   try {
-    // For authenticated users, filter by enrolled courses
     let query = {};
 
     if (req.user) {
@@ -35,31 +34,41 @@ export const getStudyMaterials = async (req, res) => {
       if (req.user.role === 'admin' || req.user.role === 'teacher') {
         query = {};
       } else {
-        // Import Enrollment model
-        const Enrollment = (await import('../models/Enrollment.js')).default;
+        // For students, filter by their class
+        if (req.user.studentClass) {
+          query.class = req.user.studentClass;
+        }
 
-        // Get user's enrolled courses - use 'student' field as per Enrollment model
-        const enrollments = await Enrollment.find({
-          student: req.user.id,
-          status: 'active',
-        }).select('course');
-
-        const enrolledCourseIds = enrollments.map(e => e.course);
-
-        // Get materials for enrolled courses OR materials without a course (for backward compatibility)
-        query = {
-          $or: [
-            { course: { $in: enrolledCourseIds } },
-            { course: null },
-          ],
-        };
+        // We also want to know which courses they are enrolled in
+        // but we show all materials of their class regardless of enrollment
       }
     }
 
-    const materials = await StudyMaterial.find(query)
+    let materials = await StudyMaterial.find(query)
       .select('-pdfData') // Exclude large buffer from list view
       .populate('course', 'title class')
       .sort({ createdAt: -1 });
+
+    // If user is logged in, attach isEnrolled status
+    if (req.user && req.user.role === 'student') {
+      const Enrollment = (await import('../models/Enrollment.js')).default;
+      const enrollments = await Enrollment.find({
+        student: req.user.id,
+        status: 'active',
+      }).select('course');
+
+      const enrolledCourseIds = enrollments.map(e => e.course.toString());
+
+      materials = materials.map(material => {
+        const materialObj = material.toObject();
+        if (!material.course) {
+          materialObj.isEnrolled = true; // General materials are always "enrolled"
+        } else {
+          materialObj.isEnrolled = enrolledCourseIds.includes(material.course._id.toString());
+        }
+        return materialObj;
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -110,7 +119,7 @@ export const createStudyMaterial = async (req, res) => {
       title,
       description,
       category,
-      grade,
+      class: studentClass,
       pages,
       questions,
       year,
@@ -118,10 +127,10 @@ export const createStudyMaterial = async (req, res) => {
     } = req.body;
 
     // Validation
-    if (!title || !category || !grade) {
+    if (!title || !category || !studentClass) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide title, category, and grade',
+        message: 'Please provide title, category, and class',
       });
     }
 
@@ -136,7 +145,7 @@ export const createStudyMaterial = async (req, res) => {
       title,
       description,
       category,
-      grade,
+      class: studentClass,
       pdfData: req.file.buffer,
       pdfContentType: req.file.mimetype,
       pages: pages || 0,
@@ -170,6 +179,12 @@ export const updateStudyMaterial = async (req, res) => {
         success: false,
         message: 'Study material not found',
       });
+    }
+
+    // Map 'grade' from frontend to 'class' in model if present
+    if (req.body.grade) {
+      req.body.class = req.body.grade;
+      delete req.body.grade;
     }
 
     material = await StudyMaterial.findByIdAndUpdate(req.params.id, req.body, {

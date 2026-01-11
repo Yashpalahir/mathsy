@@ -16,9 +16,10 @@ import StudentDashboard from "./pages/StudentDashboard";
 import ParentDashboard from "./pages/ParentDashboard";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
-import CreateProfile from "./pages/CreateProfile";
 import CourseWatch from "./pages/CourseWatch";
 import EducatorWelcome from "./pages/EducatorWelcome";
+import TestInterface from "./pages/TestInterface";
+import TestResultsView from "./pages/TestResultsView";
 import NotFound from "./pages/NotFound";
 import { PhoneVerificationGuard } from "@/components/PhoneVerificationGuard";
 
@@ -113,8 +114,23 @@ const App = () => (
                 </PhoneVerificationGuard>
               }
             />
+            <Route
+              path="/test/:id"
+              element={
+                <PhoneVerificationGuard>
+                  <TestInterface />
+                </PhoneVerificationGuard>
+              }
+            />
+            <Route
+              path="/test/:id/result"
+              element={
+                <PhoneVerificationGuard>
+                  <TestResultsView />
+                </PhoneVerificationGuard>
+              }
+            />
             <Route path="/admin" element={<Admin />} />
-            <Route path="/create-profile" element={<CreateProfile />} />
             <Route path="/educator-welcome" element={<EducatorWelcome />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route

@@ -8,9 +8,9 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
-const ADMIN_NAME = process.env.ADMIN_NAME;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@mathsy.com';
+const ADMIN_NAME = process.env.ADMIN_NAME || 'Admin';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin';
 
 if (!ADMIN_EMAIL || !ADMIN_NAME || !ADMIN_PASSWORD) {
   console.warn("⚠️ Admin credentials are not fully configured in environment variables.");
@@ -155,7 +155,7 @@ export const login = async (req, res) => {
 export const getMe = async (req, res) => {
   try {
     let user = await User.findById(req.user.id).populate('profile');
-    
+
     if (!user) {
       user = await Educator.findById(req.user.id);
     }
@@ -381,6 +381,91 @@ export const verifyOtp = async (req, res) => {
   }
 };
 
+// @desc    Send OTP to Phone
+// @route   POST /api/auth/send-phone-otp
+// @access  Public
+export const sendPhoneOtp = async (req, res) => {
+  try {
+    const { phone } = req.body;
+    if (!phone) {
+      return res.status(400).json({ success: false, message: 'Please provide a phone number' });
+    }
+
+    // Generate 6 digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Store OTP in separate collection
+    await Otp.findOneAndUpdate(
+      { phone },
+      { otp },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    // MOCK: In a real app, send OTP via SMS service (e.g. Twilio, Firebase)
+    console.log(`📱 [PHONE OTP] Sent ${otp} to ${phone}`);
+
+    res.status(200).json({
+      success: true,
+      message: `OTP sent to ${phone}`,
+      otp: process.env.NODE_ENV === 'development' ? otp : undefined // Return OTP in dev for testing
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Verify Phone OTP and Login/Signup
+// @route   POST /api/auth/verify-phone-otp
+// @access  Public
+export const verifyPhoneOtp = async (req, res) => {
+  try {
+    const { phone, otp, isFirebaseVerified } = req.body;
+    if (!phone || (!otp && !isFirebaseVerified)) {
+      return res.status(400).json({ success: false, message: 'Provide phone and OTP' });
+    }
+
+    if (!isFirebaseVerified) {
+      const validOtp = await Otp.findOne({ phone, otp });
+      if (!validOtp) {
+        return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
+      }
+      // Clear OTP from collection
+      await Otp.findOneAndDelete({ phone });
+    }
+
+    // Now check if User exists.
+    let user = await User.findOne({ phone });
+
+    if (!user) {
+      // Create a temporary user or handle as "needs profile"
+      // For now, let's create a partial user and return a token
+      user = await User.create({
+        phone,
+        role: 'student',
+        isProfileComplete: false,
+      });
+    }
+
+    const token = generateToken(user._id);
+
+    res.status(200).json({
+      success: true,
+      token,
+      user: {
+        id: user._id,
+        phone: user.phone,
+        role: user.role,
+        isProfileComplete: user.isProfileComplete,
+      },
+      message: user.isProfileComplete ? 'Login successful' : 'OTP Verified, please complete your profile',
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // @desc    Login or Verify with OTP
 // @route   POST /api/auth/login-otp
 // @access  Public
@@ -488,64 +573,56 @@ export const googleAuth = async (req, res) => {
 };
 
 // @desc    Complete Profile
-// @route   POST /api/auth/complete-profile
+// @route   PUT /api/auth/complete-profile
 // @access  Private
 export const completeProfile = async (req, res) => {
   try {
-    // User is already authenticated via Token
     const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    const { username, studentClass, address, phone } = req.body;
+    const { name, studentClass, location } = req.body;
 
-    // Basic validation
-    if (!username || !studentClass || !address) {
-      return res.status(400).json({ success: false, message: 'Please provide all fields' });
+    // Update User model directly as requested
+    if (name) user.name = name;
+    if (studentClass) user.studentClass = studentClass;
+
+    // location is passed as { latitude, longitude }
+    if (location) {
+      user.location = typeof location === 'string' ? JSON.parse(location) : location;
     }
 
-    let profile = await Profile.findOne({ user: user._id });
-
-    if (!profile) {
-      profile = new Profile({ user: user._id });
-    }
-
-    // Update fields
-    profile.username = username;
-    profile.studentClass = studentClass;
-    profile.address = address;
-    if (phone) profile.phone = phone;
-
-    // Handle avatar upload if present (now via Cloudinary)
+    // Handle avatar upload if present (via Multer-Cloudinary)
     if (req.file) {
-      profile.avatar = req.file.path; // Multer-Cloudinary sets path to the URL
+      user.avatar = req.file.path;
     }
-
-    // Ensure phone is verified before marking profile as complete
-    if (!profile.isPhoneVerified) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Phone number must be verified before completing profile' 
-      });
-    }
-
-    await profile.save();
 
     user.isProfileComplete = true;
     await user.save();
 
-    const populatedUser = await User.findById(user._id).populate('profile');
+    // Also update Profile model for compatibility if it exists
+    let profile = await Profile.findOne({ user: user._id });
+    if (!profile) {
+      profile = new Profile({ user: user._id });
+    }
+    if (name) profile.username = name; // Mapping name to username in Profile
+    if (studentClass) profile.studentClass = studentClass;
+    if (req.file) profile.avatar = req.file.path;
+    profile.isPhoneVerified = true; // Since they logged in via phone
+    await profile.save();
 
     res.status(200).json({
       success: true,
       user: {
-        id: populatedUser._id,
-        name: populatedUser.name,
-        email: populatedUser.email,
-        role: populatedUser.role,
-        isProfileComplete: populatedUser.isProfileComplete,
-        profile: populatedUser.profile
+        id: user._id,
+        name: user.name,
+        phone: user.phone,
+        role: user.role,
+        studentClass: user.studentClass,
+        avatar: user.avatar,
+        location: user.location,
+        isProfileComplete: user.isProfileComplete,
       },
     });
 
@@ -599,11 +676,13 @@ export const verifyWhatsAppOtp = async (req, res) => {
     }
 
     // Mark as verified in Profile
-    const profile = await Profile.findOne({ user: user._id });
-    if (profile) {
-      profile.isPhoneVerified = true;
-      await profile.save();
+    let profile = await Profile.findOne({ user: user._id });
+    if (!profile) {
+      profile = new Profile({ user: user._id });
     }
+
+    profile.isPhoneVerified = true;
+    await profile.save();
 
     res.status(200).json({
       success: true,
