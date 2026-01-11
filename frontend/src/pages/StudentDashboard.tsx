@@ -555,10 +555,12 @@ const StudentDashboard = () => {
                         </div>
                         <Button
                           size="sm"
-                          variant="hero"
+                          variant={test.isAttempted ? "secondary" : "hero"}
+                          disabled={test.isAttempted}
+                          className={test.isAttempted ? "bg-gray-300 text-gray-600 border-none cursor-not-allowed" : ""}
                           onClick={() => navigate(`/test/${test._id}`)}
                         >
-                          Start Test
+                          {test.isAttempted ? "Attempted" : "Start Test"}
                         </Button>
                       </div>
                     ))
@@ -585,10 +587,12 @@ const StudentDashboard = () => {
                               {test.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{test.description}</p>}
                             </div>
                             <Button
-                              variant="hero"
+                              variant={test.isAttempted ? "secondary" : "hero"}
+                              disabled={test.isAttempted}
+                              className={test.isAttempted ? "bg-gray-300 text-gray-600 border-none cursor-not-allowed" : ""}
                               onClick={() => navigate(`/test/${test._id}`)}
                             >
-                              Start Test
+                              {test.isAttempted ? "Attempted" : "Start Test"}
                             </Button>
                           </div>
                         ))}

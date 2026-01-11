@@ -21,17 +21,26 @@ export const createTest = async (req, res) => {
     // Validate questions
     for (let i = 0; i < questions.length; i++) {
       const q = questions[i];
-      if (!q.question || !q.options || !Array.isArray(q.options) || q.options.length !== 4) {
+      if (!q.question) {
         return res.status(400).json({
           success: false,
-          message: `Question ${i + 1}: Please provide question and exactly 4 options`,
+          message: `Question ${i + 1}: Please provide a question`,
         });
       }
-      if (q.correctAnswer === undefined || q.correctAnswer < 0 || q.correctAnswer > 3) {
-        return res.status(400).json({
-          success: false,
-          message: `Question ${i + 1}: Please provide correct answer index (0-3)`,
-        });
+
+      if (q.type === 'mcq') {
+        if (!q.options || !Array.isArray(q.options) || q.options.length !== 4) {
+          return res.status(400).json({
+            success: false,
+            message: `Question ${i + 1}: MCQ requires exactly 4 options`,
+          });
+        }
+        if (q.correctAnswer === undefined || q.correctAnswer < 0 || q.correctAnswer > 3) {
+          return res.status(400).json({
+            success: false,
+            message: `Question ${i + 1}: Please provide correct answer index (0-3)`,
+          });
+        }
       }
     }
 
@@ -47,11 +56,11 @@ export const createTest = async (req, res) => {
         question: q.question.trim(),
         image: q.image || '',
         video: q.video || '',
-        options: (q.options || []).map(opt => ({
+        options: q.type === 'mcq' ? (q.options || []).map(opt => ({
           text: typeof opt === 'string' ? opt.trim() : (opt.text || '').trim(),
           image: opt.image || ''
-        })),
-        correctAnswer: q.correctAnswer !== undefined ? q.correctAnswer : null,
+        })) : [],
+        correctAnswer: q.type === 'mcq' ? q.correctAnswer : null,
         explanation: q.explanation || '',
         marks: q.marks || 1,
       })),
@@ -129,10 +138,22 @@ export const getTests = async (req, res) => {
       .select('-questions.correctAnswer') // Don't send answers to students
       .sort({ createdAt: -1 });
 
+    let testsWithStatus = tests;
+    if (req.user.role === 'student') {
+      const results = await TestResult.find({ student: req.user.id });
+      const attemptedTestIds = results.map(r => r.test.toString());
+
+      testsWithStatus = tests.map(test => {
+        const testObj = test.toObject();
+        testObj.isAttempted = attemptedTestIds.includes(test._id.toString());
+        return testObj;
+      });
+    }
+
     res.status(200).json({
       success: true,
-      count: tests.length,
-      data: tests,
+      count: testsWithStatus.length,
+      data: testsWithStatus,
     });
   } catch (error) {
     console.error('Error fetching tests:', error);
@@ -204,7 +225,10 @@ export const getTest = async (req, res) => {
     const testData = test.toObject();
     if (req.user.role === 'student') {
       testData.questions = testData.questions.map(q => ({
+        type: q.type,
         question: q.question,
+        image: q.image,
+        video: q.video,
         options: q.options,
         marks: q.marks,
       }));
@@ -405,11 +429,11 @@ export const updateTest = async (req, res) => {
         question: q.question.trim(),
         image: q.image || '',
         video: q.video || '',
-        options: (q.options || []).map(opt => ({
+        options: q.type === 'mcq' ? (q.options || []).map(opt => ({
           text: typeof opt === 'string' ? opt.trim() : (opt.text || '').trim(),
           image: opt.image || ''
-        })),
-        correctAnswer: q.correctAnswer !== undefined ? q.correctAnswer : null,
+        })) : [],
+        correctAnswer: q.type === 'mcq' ? q.correctAnswer : null,
         explanation: q.explanation || '',
         marks: q.marks || 1,
       }));

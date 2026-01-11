@@ -21,7 +21,7 @@ const questionSchema = new mongoose.Schema({
   },
   options: [
     {
-      text: { type: String, required: true },
+      text: { type: String },
       image: { type: String, default: '' }
     }
   ],
