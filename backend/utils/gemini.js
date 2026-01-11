@@ -6,7 +6,7 @@ let genAIInstance = null;
 
 const getGenAI = () => {
     if (!genAIInstance) {
-        const apiKey = "AIzaSyDxdEc8PtDnZbDCR3XTVoetrFYM0kLrRcY";
+        const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) {
             console.error("CRITICAL: GEMINI_API_KEY is not defined in environment variables. Gemini features will be disabled.");
             return null;
