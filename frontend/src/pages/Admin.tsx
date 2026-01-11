@@ -44,7 +44,7 @@ interface StudyMaterial {
   title: string;
   description?: string;
   category: string;
-  grade: string;
+  class: string;
   pdfUrl: string;
   pages: number;
   questions: number;
@@ -88,7 +88,7 @@ const Admin = () => {
     title: "",
     description: "",
     category: "Notes",
-    grade: "",
+    class: "",
     pages: "",
     questions: "",
     year: "",
@@ -333,7 +333,7 @@ const Admin = () => {
       formDataToSend.append('title', materialFormData.title);
       formDataToSend.append('description', materialFormData.description);
       formDataToSend.append('category', materialFormData.category);
-      formDataToSend.append('grade', materialFormData.grade);
+      formDataToSend.append('class', materialFormData.class);
       formDataToSend.append('pages', materialFormData.pages);
       formDataToSend.append('questions', materialFormData.questions);
       formDataToSend.append('year', materialFormData.year);
@@ -350,7 +350,7 @@ const Admin = () => {
           title: materialFormData.title,
           description: materialFormData.description,
           category: materialFormData.category,
-          grade: materialFormData.grade,
+          class: materialFormData.class,
           pages: Number(materialFormData.pages) || 0,
           questions: Number(materialFormData.questions) || 0,
           year: materialFormData.year,
@@ -374,7 +374,7 @@ const Admin = () => {
       title: material.title,
       description: material.description || "",
       category: material.category,
-      grade: material.grade,
+      class: material.class,
       pages: material.pages.toString(),
       questions: material.questions.toString(),
       year: material.year || "",
@@ -403,7 +403,7 @@ const Admin = () => {
       title: "",
       description: "",
       category: "Notes",
-      grade: "",
+      class: "",
       pages: "",
       questions: "",
       year: "",
@@ -900,7 +900,7 @@ const Admin = () => {
                     <div className="flex-1">
                       <h3 className="font-semibold">{material.title}</h3>
                       <p className="text-sm text-muted-foreground">
-                        {material.category} • {material.grade}
+                        {material.category} • {material.class}
                         {material.course && ` • ${material.course.title}`}
                         {material.pages > 0 && ` • ${material.pages} pages`}
                         {material.questions > 0 && ` • ${material.questions} questions`}
@@ -1114,20 +1114,22 @@ const Admin = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="material-grade">Grade</Label>
+                  <Label htmlFor="material-class">Class</Label>
                   <select
-                    id="material-grade"
-                    value={materialFormData.grade}
-                    onChange={(e) => setMaterialFormData({ ...materialFormData, grade: e.target.value })}
+                    id="material-class"
+                    value={materialFormData.class}
+                    onChange={(e) => setMaterialFormData({ ...materialFormData, class: e.target.value })}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     required
                   >
-                    <option value="">-- Select Grade --</option>
+                    <option value="">-- Select Class --</option>
                     <option value="Class 6">Class 6</option>
                     <option value="Class 7">Class 7</option>
                     <option value="Class 8">Class 8</option>
                     <option value="Class 9">Class 9</option>
                     <option value="Class 10">Class 10</option>
+                    <option value="Class 11">Class 11</option>
+                    <option value="Class 12">Class 12</option>
                   </select>
                 </div>
               </div>
