@@ -98,8 +98,8 @@ const Admin = () => {
 
   // Educator state
   const [educatorFormData, setEducatorFormData] = useState({
-    email: "",
-    password: "",
+    name: "",
+    phone: "",
   });
   const [isEducatorDialogOpen, setIsEducatorDialogOpen] = useState(false);
 
@@ -417,14 +417,14 @@ const Admin = () => {
   const handleEducatorSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (!educatorFormData.email || !educatorFormData.password) {
-        toast.error("Please provide both email and password");
+      if (!educatorFormData.phone) {
+        toast.error("Please provide phone number");
         return;
       }
 
-      await (apiClient as any).addEducator(educatorFormData.email, educatorFormData.password);
+      await (apiClient as any).addEducator(educatorFormData.phone, educatorFormData.name);
       toast.success("Educator added successfully");
-      setEducatorFormData({ email: "", password: "" });
+      setEducatorFormData({ name: "", phone: "" });
       setIsEducatorDialogOpen(false);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to add educator");
@@ -960,24 +960,21 @@ const Admin = () => {
                   </DialogHeader>
                   <form onSubmit={handleEducatorSubmit} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="educator-email">Gmail / Email</Label>
+                      <Label htmlFor="educator-name">Full Name</Label>
                       <Input
-                        id="educator-email"
-                        type="email"
-                        value={educatorFormData.email}
-                        onChange={(e) => setEducatorFormData({ ...educatorFormData, email: e.target.value })}
-                        placeholder="educator@gmail.com"
-                        required
+                        id="educator-name"
+                        value={educatorFormData.name}
+                        onChange={(e) => setEducatorFormData({ ...educatorFormData, name: e.target.value })}
+                        placeholder="John Doe"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="educator-password">Password</Label>
+                      <Label htmlFor="educator-phone">Phone Number</Label>
                       <Input
-                        id="educator-password"
-                        type="password"
-                        value={educatorFormData.password}
-                        onChange={(e) => setEducatorFormData({ ...educatorFormData, password: e.target.value })}
-                        placeholder="••••••••"
+                        id="educator-phone"
+                        value={educatorFormData.phone}
+                        onChange={(e) => setEducatorFormData({ ...educatorFormData, phone: e.target.value })}
+                        placeholder="9876543210"
                         required
                       />
                     </div>

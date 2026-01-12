@@ -32,7 +32,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ error: string | null }>;
   signup: (email: string, password: string, fullName: string, userType: "student" | "parent", studentClass?: string) => Promise<{ error: string | null }>;
   adminPasswordLogin: (password: string) => Promise<{ error: string | null }>;
-  educatorLogin: (email: string, password: string) => Promise<{ error: string | null }>;
+
   sendOtp: (email: string) => Promise<{ error: string | null; message?: string }>;
   verifyOtp: (email: string, otp: string) => Promise<{ error: string | null; message?: string }>;
   loginWithOtp: (email: string, otp: string) => Promise<{ error: string | null }>;
@@ -112,24 +112,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const educatorLogin = async (email: string, password: string): Promise<{ error: string | null }> => {
-    try {
-      console.log(`[AUTH_CONTEXT] Attempting educator login for: ${email}`);
-      const response = await apiClient.educatorLogin(email, password);
-      console.log(`[AUTH_CONTEXT] Educator login response:`, response);
-      if (response.success && response.token && response.user) {
-        apiClient.setToken(response.token);
-        await refreshUser();
-        console.log(`[AUTH_CONTEXT] Educator logged in successfully. User role: ${response.user.role}`);
-        return { error: null };
-      }
-      console.warn(`[AUTH_CONTEXT] Educator login failed: Missing token or user data in response`);
-      return { error: "Educator login failed: Missing token or user data" };
-    } catch (error) {
-      console.error(`[AUTH_CONTEXT] Educator login exception:`, error);
-      return { error: error instanceof Error ? error.message : "Educator login failed" };
-    }
-  };
+
 
   const signup = async (
     email: string,
@@ -269,7 +252,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         login,
         signup,
         adminPasswordLogin,
-        educatorLogin,
+
         sendOtp,
         verifyOtp,
         loginWithOtp,

@@ -1,5 +1,5 @@
 import express from 'express';
-import { getMe, completeProfile, educatorLogin, verifyPhoneOtp } from '../controllers/authController.js';
+import { getMe, completeProfile, verifyPhoneOtp } from '../controllers/authController.js';
 import { protect } from '../middleware/auth.js';
 import multer from 'multer';
 import { storage } from '../utils/cloudinary.js';
@@ -12,7 +12,7 @@ const upload = multer({
 });
 
 
-router.post('/educator-login', educatorLogin);
+
 router.post('/verify-phone-otp', verifyPhoneOtp);
 router.put('/complete-profile', protect, upload.single('avatar'), completeProfile);
 router.get('/me', protect, getMe);

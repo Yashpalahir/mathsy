@@ -3,9 +3,7 @@ import TestResult from '../models/TestResult.js';
 import Enrollment from '../models/Enrollment.js';
 import { getExplanation, evaluateSubjective } from '../utils/gemini.js';
 
-// @desc    Create test
-// @route   POST /api/tests
-// @access  Private/Admin
+
 export const createTest = async (req, res) => {
   try {
     const { name, class: testClass, description, questions, duration, passingMarks, course } = req.body;
@@ -255,11 +253,12 @@ export const submitTest = async (req, res) => {
   try {
     const { answers, timeTaken } = req.body;
     const testId = req.params.id;
-
+    console.log("answer", answers)
+    console.log("timeTaken", timeTaken)
     if (!answers || !Array.isArray(answers)) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide answers array',
+        message: 'Please provide answers',
       });
     }
 
@@ -314,7 +313,7 @@ export const submitTest = async (req, res) => {
         };
       }
     });
-
+    console.log("evalute", evaluatedAnswers);
     const obtainedMarks = evaluatedAnswers.reduce((sum, ans) => sum + ans.marksObtained, 0);
     const percentage = (obtainedMarks / test.totalMarks) * 100;
     const status = percentage >= (test.passingMarks || 0) ? 'passed' : 'failed';

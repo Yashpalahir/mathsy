@@ -20,10 +20,7 @@
         "CLOUDINARY_CLOUD_NAME": "dp2n8jqif",
         "CLOUDINARY_API_KEY": "128214393778815",
         "CLOUDINARY_API_SECRET": "4uf4uNumfpEWSkgnV5zMIikB3rg",
-        "GEMINI_API_KEY": "AIzaSyDxdEc8PtDnZbDCR3XTVoetrFYM0kLrRcY",
-        "GOOGLE_CLIENT_ID": "527442118680-mj937n439e2oj6v3eep1a7is5ujumsuu.apps.googleusercontent.com",
-        "GOOGLE_CLIENT_SECRET": "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",
-        "GOOGLE_REDIRECT_URI": "https://qynclc68i9.execute-api.ap-south-1.amazonaws.com/api/auth/google/callback",
+        "GEMINI_API_KEY": "AIzaSyAX_CXQ-EzfmIxqqVnE96P9R4V0JbbWm9U",
         "RAZORPAY_KEY_ID": "rzp_test_RrxDhZynwNfJHu",
         "RAZORPAY_KEY_SECRET": "zkxrrkGoskPcxaIl6NKN42KS",
         "EMAIL_SERVICE": "gmail",
@@ -128,7 +125,7 @@
             "Properties": {
               "Code": {
                 "S3Bucket": "serverless-framework-deployments-ap-south-1-d2a564ab-8a74",
-                "S3Key": "serverless/mathsy-backend/dev/1768154356269-2026-01-11T17:59:16.269Z/mathsy-backend.zip"
+                "S3Key": "serverless/mathsy-backend/dev/1768216387575-2026-01-12T11:13:07.575Z/mathsy-backend.zip"
               },
               "Handler": "server.handler",
               "Runtime": "nodejs18.x",
@@ -145,10 +142,7 @@
                   "CLOUDINARY_CLOUD_NAME": "dp2n8jqif",
                   "CLOUDINARY_API_KEY": "128214393778815",
                   "CLOUDINARY_API_SECRET": "4uf4uNumfpEWSkgnV5zMIikB3rg",
-                  "GEMINI_API_KEY": "AIzaSyDxdEc8PtDnZbDCR3XTVoetrFYM0kLrRcY",
-                  "GOOGLE_CLIENT_ID": "527442118680-mj937n439e2oj6v3eep1a7is5ujumsuu.apps.googleusercontent.com",
-                  "GOOGLE_CLIENT_SECRET": "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",
-                  "GOOGLE_REDIRECT_URI": "https://qynclc68i9.execute-api.ap-south-1.amazonaws.com/api/auth/google/callback",
+                  "GEMINI_API_KEY": "AIzaSyAX_CXQ-EzfmIxqqVnE96P9R4V0JbbWm9U",
                   "RAZORPAY_KEY_ID": "rzp_test_RrxDhZynwNfJHu",
                   "RAZORPAY_KEY_SECRET": "zkxrrkGoskPcxaIl6NKN42KS",
                   "EMAIL_SERVICE": "gmail",
@@ -170,14 +164,14 @@
               "AppLogGroup"
             ]
           },
-          "AppLambdaVersionfUnahxuVQJPqQ53VoTp5E5YqM3HBN6KxFreiyEoCYI": {
+          "AppLambdaVersionZdWr6tnS7I6Wl2kyrp0fvDPIu7jt4h2T9XIWshX26EM": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "AppLambdaFunction"
               },
-              "CodeSha256": "n0oWqvu5FQyldi+UoQAtc3GhwpU9IbuVQCoqIOUK+M4="
+              "CodeSha256": "kMEJVHPLOcr0P2fkZewuiorsbDgJDbH+Oi7+r7g9TuM="
             }
           },
           "HttpApi": {
@@ -283,7 +277,7 @@
           "AppLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "AppLambdaVersionfUnahxuVQJPqQ53VoTp5E5YqM3HBN6KxFreiyEoCYI"
+              "Ref": "AppLambdaVersionZdWr6tnS7I6Wl2kyrp0fvDPIu7jt4h2T9XIWshX26EM"
             },
             "Export": {
               "Name": "sls-mathsy-backend-dev-AppLambdaFunctionQualifiedArn"
@@ -343,7 +337,7 @@
         "timeout": 12,
         "runtime": "nodejs18.x",
         "vpc": {},
-        "versionLogicalId": "AppLambdaVersionfUnahxuVQJPqQ53VoTp5E5YqM3HBN6KxFreiyEoCYI"
+        "versionLogicalId": "AppLambdaVersionZdWr6tnS7I6Wl2kyrp0fvDPIu7jt4h2T9XIWshX26EM"
       }
     },
     "configValidationMode": "warn",
@@ -367,7 +361,7 @@
         "artifactsS3KeyDirname": "serverless/mathsy-backend/dev/code-artifacts",
         "deploymentBucket": "serverless-framework-deployments-ap-south-1-d2a564ab-8a74",
         "artifact": "/Users/ayushpratapsingh/Downloads/mathsy/backend/.serverless/mathsy-backend.zip",
-        "artifactDirectoryName": "serverless/mathsy-backend/dev/1768154356269-2026-01-11T17:59:16.269Z"
+        "artifactDirectoryName": "serverless/mathsy-backend/dev/1768216387575-2026-01-12T11:13:07.575Z"
       }
     },
     "appId": null,
@@ -376,7 +370,7 @@
     "artifact": "/Users/ayushpratapsingh/Downloads/mathsy/backend/.serverless/mathsy-backend.zip"
   },
   "package": {
-    "artifactDirectoryName": "serverless/mathsy-backend/dev/1768154356269-2026-01-11T17:59:16.269Z",
+    "artifactDirectoryName": "serverless/mathsy-backend/dev/1768216387575-2026-01-12T11:13:07.575Z",
     "artifact": "mathsy-backend.zip"
   }
 }

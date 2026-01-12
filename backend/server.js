@@ -1,47 +1,8 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import serverless from 'serverless-http';
-import passport from 'passport';
-
 import connectDB from './config/db.js';
-import './config/passport.js';
-
-dotenv.config();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const app = express();
-
-app.use(async (req, res, next) => {
-  await connectDB(); // reuses connection in Lambda
-  next();
-});
-
-/* ------------ CORS ------------- */
-app.use(cors({
-  origin: [
-    "https://mathsy.in",
-    "https://www.mathsy.in",
-    "http://localhost:8080",
-  ],
-  credentials: true,
-}));
-
-/* Avoid JSON parsing for multipart requests */
-app.use((req, res, next) => {
-  const contentType = (req.headers['content-type'] || '').toLowerCase();
-  if (contentType.includes('multipart/form-data')) {
-    return next();
-  }
-  express.json({ limit: '10mb' })(req, res, next);
-});
-
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
 import authRoutes from './routes/authRoutes.js';
 import courseRoutes from './routes/courseRoutes.js';
 import enrollmentRoutes from './routes/enrollmentRoutes.js';
@@ -57,7 +18,40 @@ import feeStatusRoutes from './routes/feeStatusRoutes.js';
 import attendanceRoutes from './routes/attendanceRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
+dotenv.config();
 
+const app = express();
+
+app.use(async (req, res, next) => {
+  await connectDB();
+  next();
+});
+
+/* ------------ CORS ------------- */
+app.use(cors({
+  origin: [
+    "https://mathsy.in",
+    "https://www.mathsy.in",
+    "http://localhost:8080",
+  ],
+  credentials: true,
+}));
+
+
+/* Avoid JSON parsing for multipart requests */
+app.use((req, res, next) => {
+  const contentType = (req.headers['content-type'] || '').toLowerCase();
+  if (contentType.includes('multipart/form-data')) {
+    return next();
+  }
+  express.json({ limit: '10mb' })(req, res, next);
+});
+
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// routes import...
+
+// ... (rest of routes)
 app.use('/api/auth', authRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
@@ -73,6 +67,8 @@ app.use('/api/fee-status', feeStatusRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/upload', uploadRoutes);
+
+// ... (rest of routes)
 
 /* ------------ Health Check ------------ */
 app.get('/api/health', (req, res) => {
@@ -101,18 +97,9 @@ app.use((err, req, res, next) => {
   });
 });
 
-/* --------------------------------------
-   ❌ REMOVED app.listen()
-   AWS Lambda does not use ports
----------------------------------------- */
 
-/* --------------------------------------
-   🚀 Export Lambda Handler
----------------------------------------- */
-export const handler = serverless(app);
-
-
-// const PORT = process.env.PORT || 5000;
-// app.listen(PORT, () => {
-//   console.log(`🚀 Server running locally on http://localhost:${PORT}`);
-// });
+//export const handler = serverless(app);
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
