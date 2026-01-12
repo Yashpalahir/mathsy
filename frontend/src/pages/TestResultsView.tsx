@@ -7,6 +7,11 @@ import { apiClient } from "@/lib/api";
 import { toast } from "react-toastify";
 import { Loader2, CheckCircle, XCircle, MessageSquare, BookOpen, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import remarkGfm from 'remark-gfm';
+import 'katex/dist/katex.min.css';
 
 const TestResultsView = () => {
     const { id } = useParams<{ id: string }>();
@@ -77,7 +82,14 @@ const TestResultsView = () => {
                                         {ans.isCorrect ? <CheckCircle className="text-green-500 w-6 h-6" /> : <XCircle className="text-red-500 w-6 h-6" />}
                                     </CardHeader>
                                     <CardContent className="space-y-4">
-                                        <p className="text-lg font-medium">{question.question}</p>
+                                        <div className="text-lg font-medium prose prose-slate max-w-none dark:prose-invert">
+                                            <ReactMarkdown
+                                                remarkPlugins={[remarkMath, remarkGfm]}
+                                                rehypePlugins={[rehypeKatex]}
+                                            >
+                                                {question.question}
+                                            </ReactMarkdown>
+                                        </div>
 
                                         {question.image && <img src={question.image} alt="Q" className="max-h-60 rounded border" />}
 
@@ -96,7 +108,14 @@ const TestResultsView = () => {
                                                     return (
                                                         <div key={oIdx} className={`p-3 rounded-lg border-2 ${borderCol} ${bgColor} flex items-center justify-between`}>
                                                             <div className="flex items-center gap-3">
-                                                                <span>{String.fromCharCode(65 + oIdx)}. {opt.text}</span>
+                                                                <span className="prose prose-sm max-w-none dark:prose-invert">
+                                                                    <ReactMarkdown
+                                                                        remarkPlugins={[remarkMath, remarkGfm]}
+                                                                        rehypePlugins={[rehypeKatex]}
+                                                                    >
+                                                                        {`${String.fromCharCode(65 + oIdx)}. ${opt.text}`}
+                                                                    </ReactMarkdown>
+                                                                </span>
                                                                 {opt.image && <img src={opt.image} className="h-10 rounded" alt="opt" />}
                                                             </div>
                                                             {oIdx === question.correctAnswer && <CheckCircle className="w-4 h-4" />}
@@ -107,7 +126,14 @@ const TestResultsView = () => {
                                         ) : (
                                             <div className="bg-muted/20 p-4 rounded-lg border">
                                                 <p className="text-sm font-bold text-muted-foreground mb-2">YOUR ANSWER:</p>
-                                                <p className="whitespace-pre-wrap">{ans.subjectiveAnswer || "No answer provided"}</p>
+                                                <div className="prose prose-sm max-w-none dark:prose-invert">
+                                                    <ReactMarkdown
+                                                        remarkPlugins={[remarkMath, remarkGfm]}
+                                                        rehypePlugins={[rehypeKatex]}
+                                                    >
+                                                        {ans.subjectiveAnswer || "No answer provided"}
+                                                    </ReactMarkdown>
+                                                </div>
                                             </div>
                                         )}
 
@@ -116,7 +142,14 @@ const TestResultsView = () => {
                                                 <div className="flex items-center gap-2 text-blue-800 mb-2 font-bold">
                                                     <MessageSquare className="w-5 h-5" /> Gemini AI Feedback
                                                 </div>
-                                                <p className="text-blue-900 whitespace-pre-wrap">{ans.feedback}</p>
+                                                <div className="text-blue-900 prose prose-blue max-w-none">
+                                                    <ReactMarkdown
+                                                        remarkPlugins={[remarkMath, remarkGfm]}
+                                                        rehypePlugins={[rehypeKatex]}
+                                                    >
+                                                        {ans.feedback}
+                                                    </ReactMarkdown>
+                                                </div>
                                             </div>
                                         )}
 
@@ -125,7 +158,14 @@ const TestResultsView = () => {
                                                 <div className="flex items-center gap-2 text-amber-800 mb-2 font-bold">
                                                     <BookOpen className="w-5 h-5" /> Solution & Explanation
                                                 </div>
-                                                <p className="text-amber-900 whitespace-pre-wrap">{ans.explanation}</p>
+                                                <div className="text-amber-900 prose prose-amber max-w-none">
+                                                    <ReactMarkdown
+                                                        remarkPlugins={[remarkMath, remarkGfm]}
+                                                        rehypePlugins={[rehypeKatex]}
+                                                    >
+                                                        {ans.explanation}
+                                                    </ReactMarkdown>
+                                                </div>
                                             </div>
                                         )}
                                     </CardContent>
