@@ -29,21 +29,21 @@ const itemVariants: Variants = {
 
 const achievements = [
   { number: "10+", label: "Years Experience" },
-  { number: "5000+", label: "Students Taught" },
+  { number: "500+", label: "Students Taught" },
   { number: "98%", label: "Success Rate" },
-  { number: "500+", label: "Board Toppers" },
+  { number: "100+", label: "Board Toppers" },
 ];
 
 const values = [
   {
     icon: Target,
     title: "Mission",
-    description: "To make quality mathematics education accessible to every student, helping them build confidence and achieve academic excellence.",
+    description: "To make quality education accessible to every student, helping them build confidence and achieve academic excellence.",
   },
   {
     icon: GraduationCap,
     title: "Vision",
-    description: "To become India's most trusted math coaching platform, known for transforming students' relationship with mathematics.",
+    description: "To become India's most trusted coaching platform, known for transforming students' relationship with education.",
   },
 ];
 
@@ -63,7 +63,7 @@ const About = () => {
               About <span className="text-secondary">Mathsy</span>
             </h1>
             <p className="text-primary-foreground/80 text-lg">
-              Empowering students to master mathematics through expert guidance, interactive learning, and proven teaching methodologies.
+              Empowering students to master concepts through expert guidance, interactive learning, and proven teaching methodologies.
             </p>
           </motion.div>
         </div>
@@ -99,19 +99,22 @@ const About = () => {
                 Our Story
               </span>
               <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-6">
-                A Passion for Teaching <span className="text-primary">Mathematics</span>
+                A Passion for Teaching
               </h2>
               <div className="space-y-4 text-muted-foreground">
                 <p>
-                  Mathsy was founded with a simple yet powerful mission: to transform how students perceive and learn mathematics. What started as a small tutoring initiative has grown into a comprehensive online learning platform.
+                  Mathsy began with a simple yet powerful mission: to transform how students learn and understand academic concepts. What started as a small tutoring initiative has grown into a comprehensive online learning platform covering all major subjects.
                 </p>
+
                 <p>
-                  Our founder, with over 10 years of teaching experience, recognized that many students struggle with maths not because of ability, but due to unclear concepts and fear. Mathsy addresses this through patient, concept-focused teaching.
+                  With over a decade of teaching experience, our founder recognized that students often struggle not because of a lack of ability, but due to unclear explanations and limited conceptual clarity. Mathsy focuses on delivering clear, engaging, and concept-driven learning for every subject.
                 </p>
+
                 <p>
-                  Today, we're proud to have helped thousands of students not just pass their exams, but truly understand and enjoy mathematics.
+                  Today, we are proud to have guided thousands of students toward stronger understanding, improved grades, and a more enjoyable learning experience across subjects.
                 </p>
               </div>
+
             </motion.div>
             <motion.div
               initial={{ opacity: 0, x: 30 }}
@@ -185,7 +188,7 @@ const About = () => {
             Ready to Start Your Journey?
           </h2>
           <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
-            Join Mathsy today and experience the difference in math education.
+            Join Mathsy today and experience the difference in education.
           </p>
           <Button asChild variant="hero" size="lg">
             <Link to="/courses">Explore Courses</Link>

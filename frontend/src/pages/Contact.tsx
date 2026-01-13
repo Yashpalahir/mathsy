@@ -78,7 +78,6 @@ const Contact = () => {
           <div className="grid lg:grid-cols-2 gap-12">
             {/* Contact Info */}
             <div>
-              <h2 className="font-display text-2xl font-bold text-foreground mb-8">Get in Touch</h2>
 
               <div className="grid sm:grid-cols-2 gap-6 mb-10">
                 {contactInfo.map((item, i) => (
@@ -117,7 +116,7 @@ const Contact = () => {
 
             {/* Contact Form */}
             <div>
-              <div className="bg-card rounded-2xl p-8 shadow-card">
+              <div className="bg-card rounded-2xl p-8 shadow-card" >
                 <h2 className="font-display text-2xl font-bold text-foreground mb-2">Send us a Message</h2>
                 <p className="text-muted-foreground mb-8">Fill out the form and we'll be in touch within 24 hours.</p>
 
@@ -135,7 +134,7 @@ const Contact = () => {
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">Phone Number</label>
                       <Input
-                        //placeholder="+91 98765 43210"
+                        //placeholder="+91 **********"
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                         required

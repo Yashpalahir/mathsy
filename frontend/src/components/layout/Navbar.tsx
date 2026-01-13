@@ -21,7 +21,6 @@ const navLinks = [
   { name: "Courses", path: "/courses" },
   { name: "Live Classes", path: "/live-classes" },
   { name: "Study Materials", path: "/study-materials" },
-  { name: "Results", path: "/results" },
   { name: "Contact", path: "/contact" },
 ];
 
