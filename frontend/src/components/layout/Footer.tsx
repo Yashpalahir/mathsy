@@ -56,7 +56,13 @@ export const Footer = () => {
           <div>
             <h4 className="font-display font-bold text-lg mb-4">Our Courses</h4>
             <ul className="space-y-3">
-              {["Class 8 Maths", "Class 9 Maths", "Class 10 Board Prep", "Class 11 - 12", "JEE Foundation"].map((course) => (
+              {[
+                "Class 1st to 8th",
+                "Class 9th",
+                "Class 10th Board Prep",
+                "JEE Foundation",
+                "NEET Foundation"
+              ].map((course) => (
                 <li key={course}>
                   <Link to="/courses" className="text-background/70 hover:text-secondary transition-colors text-sm">
                     {course}
