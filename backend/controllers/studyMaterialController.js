@@ -1,7 +1,6 @@
 import StudyMaterial from '../models/StudyMaterial.js';
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
+
 
 // Configure multer for PDF uploads (store in memory)
 const storage = multer.memoryStorage();

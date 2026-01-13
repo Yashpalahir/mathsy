@@ -2,16 +2,16 @@ import Review from '../models/Review.js';
 
 // @desc    Create review
 // @route   POST /api/reviews
-// @access  Public
+// @access  Private
 export const createReview = async (req, res) => {
   try {
-    const { name, role, content, rating, image } = req.body;
+    const { content, rating } = req.body;
 
     // Validation
-    if (!name || !role || !content || !rating) {
+    if (!content || !rating) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide name, role, content, and rating',
+        message: 'Please provide review content and rating',
       });
     }
 
@@ -23,15 +23,27 @@ export const createReview = async (req, res) => {
       });
     }
 
-    // Get user ID if authenticated (optional)
-    const userId = req.user && req.user.id ? req.user.id : null;
+    // Get user data from authenticated user
+    const user = req.user;
+    const name = user.name;
+    const image = user.avatar || '';
+    const userId = user.id;
+
+    // Format role: "Student of Class X" or "Parent of Class X"
+    let role = '';
+    if (user.role === 'student' || user.role === 'parent') {
+      const userType = user.role.charAt(0).toUpperCase() + user.role.slice(1);
+      role = user.class ? `${userType} of ${user.class}` : userType;
+    } else {
+      role = user.role.charAt(0).toUpperCase() + user.role.slice(1);
+    }
 
     const review = await Review.create({
-      name: name.trim(),
-      role: role.trim(),
+      name,
+      role,
       content: content.trim(),
       rating: Number(rating),
-      image: image ? image.trim() : '',
+      image,
       user: userId,
       status: 'approved', // Auto-approve reviews
     });
@@ -55,13 +67,22 @@ export const createReview = async (req, res) => {
 // @access  Public
 export const getReviews = async (req, res) => {
   try {
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 5;
+    const skip = (page - 1) * limit;
+
+    const total = await Review.countDocuments({ status: 'approved' });
     const reviews = await Review.find({ status: 'approved' })
       .sort({ createdAt: -1 })
-      .limit(20); // Limit to latest 20 reviews
+      .skip(skip)
+      .limit(limit);
 
     res.status(200).json({
       success: true,
       count: reviews.length,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
       data: reviews,
     });
   } catch (error) {

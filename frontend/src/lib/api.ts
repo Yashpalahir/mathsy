@@ -430,6 +430,25 @@ class ApiClient {
       method: 'GET',
     });
   }
+
+  // Review endpoints
+  async getReviews(page: number = 1, limit: number = 5) {
+    return this.request<{
+      data: any[];
+      total: number;
+      page: number;
+      pages: number;
+    }>(`/reviews?page=${page}&limit=${limit}`, {
+      method: 'GET',
+    });
+  }
+
+  async createReview(data: { content: string; rating: number }) {
+    return this.request<{ success: boolean; message: string; data: any }>('/reviews', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);

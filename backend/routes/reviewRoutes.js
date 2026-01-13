@@ -10,8 +10,11 @@ import { protect, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Public routes - anyone can create and view reviews
-router.route('/').post(createReview).get(getReviews);
+// Public routes - anyone can view reviews
+router.route('/').get(getReviews);
+
+// Protected routes
+router.route('/').post(protect, createReview);
 
 // Admin routes
 router.route('/all').get(protect, authorize('admin'), getAllReviews);
