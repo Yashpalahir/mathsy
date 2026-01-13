@@ -140,7 +140,7 @@ const TestResultsView = () => {
                                         {ans.feedback && (
                                             <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
                                                 <div className="flex items-center gap-2 text-blue-800 mb-2 font-bold">
-                                                    <MessageSquare className="w-5 h-5" /> Gemini AI Feedback
+                                                    <MessageSquare className="w-5 h-5" /> Feedback
                                                 </div>
                                                 <div className="text-blue-900 prose prose-blue max-w-none">
                                                     <ReactMarkdown
