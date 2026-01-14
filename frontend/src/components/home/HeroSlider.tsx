@@ -66,7 +66,7 @@ export const HeroSlider = () => {
                                     <img
                                         src={banner.image}
                                         alt={banner.alt}
-                                        className="w-full h-auto block"
+                                        className="w-full h-auto blockAbout"
                                         loading="eager"
                                     />
                                 </motion.div>
