@@ -1,5 +1,6 @@
 import { motion, Variants } from "framer-motion";
 import { Link } from "react-router-dom";
+import { CourseCard } from "@/components/courses/CourseCard";
 import { Button } from "@/components/ui/button";
 import { Clock, Users, BookOpen, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -15,6 +16,21 @@ interface Course {
   price: number;
   color?: string;
   popular?: boolean;
+  onlineTag?: boolean;
+  bannerImage?: string;
+  bannerTitle?: string;
+  bannerSubtitle?: string;
+  teacherGroupImage?: string;
+  yellowTagText?: string;
+  courseDuration?: {
+    startDate?: string;
+    endDate?: string;
+  };
+  languageBadge?: string;
+  audienceText?: string;
+  promoBannerText?: string;
+  oldPrice?: number;
+  discountPercent?: number;
 }
 
 export const CoursesPreview = () => {
@@ -95,60 +111,30 @@ export const CoursesPreview = () => {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-100px" }}
-            className="grid md:grid-cols-2 lg:grid-cols-4 gap-6"
+            className="grid md:grid-cols-2 lg:grid-cols-4 gap-4"
           >
             {courses.map((course) => (
-              <motion.div
+              <CourseCard
                 key={course._id}
-                variants={itemVariants}
-                whileHover={{ y: -10, transition: { duration: 0.3 } }}
-                className="group relative bg-card rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300"
-              >
-                {course.popular && (
-                  <motion.div
-                    initial={{ x: 20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.5 }}
-                    className="absolute top-4 right-4 bg-secondary text-secondary-foreground text-xs font-bold px-3 py-1 rounded-full z-10"
-                  >
-                    Popular
-                  </motion.div>
-                )}
-
-                <div className={`h-32 bg-gradient-to-br ${course.color || 'from-mathsy-blue to-primary'} p-6 flex items-end`}>
-                  <h3 className="font-display font-bold text-xl text-primary-foreground">
-                    {course.title}
-                  </h3>
-                </div>
-
-                <div className="p-6 space-y-4">
-                  <p className="text-muted-foreground text-sm">{course.description}</p>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-foreground/70">
-                      <Clock className="w-4 h-4" />
-                      <span>{course.duration}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-foreground/70">
-                      <Users className="w-4 h-4" />
-                      <span>{course.studentsCount || 50}+ enrolled</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-foreground/70">
-                      <BookOpen className="w-4 h-4" />
-                      <span>{course.chapters || 50} chapters</span>
-                    </div>
-                  </div>
-
-                  <div className="pt-4 border-t border-border">
-                    <div className="flex items-center justify-between">
-                      <span className="font-display font-bold text-2xl text-primary">₹{course.price.toLocaleString()}</span>
-                      <Button asChild size="sm" variant="outline" className="group-hover:bg-primary group-hover:text-primary-foreground">
-                        <Link to="/courses">View <ArrowRight className="w-4 h-4 ml-1" /></Link>
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
+                title={course.title}
+                subtitle={course.description.substring(0, 80) + '...'}
+                bannerImage={course.bannerImage}
+                bannerTitle={course.bannerTitle}
+                bannerSubtitle={course.bannerSubtitle}
+                teacherGroupImage={course.teacherGroupImage}
+                yellowTagText={course.yellowTagText}
+                startDate={course.courseDuration?.startDate}
+                endDate={course.courseDuration?.endDate}
+                price={course.price}
+                oldPrice={course.oldPrice}
+                language={course.languageBadge}
+                promoText={course.promoBannerText}
+                discount={course.discountPercent}
+                onlineTag={course.onlineTag}
+                audienceText={course.audienceText}
+                onExplore={() => { window.location.href = '/courses'; }}
+                onBuy={() => { window.location.href = `/courses?buy=${course._id}`; }}
+              />
             ))}
           </motion.div>
         )}

@@ -14,10 +14,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // ------------------ ADMIN CREDENTIALS ------------------
-
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@mathsy.com';
-const ADMIN_NAME = process.env.ADMIN_NAME || 'Admin';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin';
+// Moved into login function to ensure process.env is read at request time
 
 // ==============================================================
 // 1️⃣  VERIFY PHONE OTP → LOGIN OR CREATE NEW USER
@@ -181,7 +178,12 @@ export const adminLogin = async (req, res) => {
   try {
     const { password } = req.body;
 
-    if (password !== ADMIN_PASSWORD) {
+    const ADMIN_PASSWORD = (process.env.ADMIN_PASSWORD || 'admin').trim();
+    const ADMIN_PHONE = process.env.ADMIN_PHONE || '1234567890';
+    const ADMIN_NAME = process.env.ADMIN_NAME || 'Admin';
+
+
+    if (!password || password.trim() !== ADMIN_PASSWORD) {
       return res.status(401).json({
         success: false,
         message: 'Invalid admin password',
@@ -191,12 +193,12 @@ export const adminLogin = async (req, res) => {
     // Find any existing admin user to attach the session to
     // We do NOT rely on email since the User model might not support it
     let adminUser = await User.findOne({ role: 'admin' });
-
     if (!adminUser) {
       adminUser = await User.create({
+        phone: ADMIN_PHONE,
         name: ADMIN_NAME,
-        password: ADMIN_PASSWORD,
         role: 'admin',
+        isProfileComplete: true,
       });
     }
 

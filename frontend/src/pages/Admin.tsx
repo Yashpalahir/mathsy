@@ -29,14 +29,19 @@ interface Course {
   color?: string;
   popular?: boolean;
   studentsCount?: number;
-  batchAbout?: string;
-  courseDuration?: {
-    startDate?: string;
-    endDate?: string;
-  };
-  validity?: string;
   examGuidance?: string;
   counselingSupport?: string;
+  onlineTag?: boolean;
+  bannerImage?: string;
+  bannerTitle?: string;
+  bannerSubtitle?: string;
+  teacherGroupImage?: string;
+  yellowTagText?: string;
+  languageBadge?: string;
+  audienceText?: string;
+  promoBannerText?: string;
+  oldPrice?: number;
+  discountPercent?: number;
 }
 
 interface StudyMaterial {
@@ -77,12 +82,19 @@ const Admin = () => {
     syllabus: "",
     color: "from-mathsy-blue to-primary",
     popular: false,
-    batchAbout: "",
-    startDate: "",
-    endDate: "",
-    validity: "",
     examGuidance: "Exam guidance at our Mathsy Offline centers",
     counselingSupport: "One-to-one emotional well-being support by Mathsy counselors",
+    onlineTag: true,
+    bannerImage: "",
+    bannerTitle: "",
+    bannerSubtitle: "",
+    teacherGroupImage: "",
+    yellowTagText: "COMEBACK KIT INCLUDED",
+    languageBadge: "Hinglish",
+    audienceText: "",
+    promoBannerText: "New Batch Plans Included",
+    oldPrice: "",
+    discountPercent: "",
   });
   const [materialFormData, setMaterialFormData] = useState({
     title: "",
@@ -236,14 +248,19 @@ const Admin = () => {
           : undefined,
         color: formData.color,
         popular: formData.popular,
-        batchAbout: formData.batchAbout || undefined,
-        courseDuration: (formData.startDate || formData.endDate) ? {
-          startDate: formData.startDate || undefined,
-          endDate: formData.endDate || undefined,
-        } : undefined,
-        validity: formData.validity || undefined,
         examGuidance: formData.examGuidance || undefined,
         counselingSupport: formData.counselingSupport || undefined,
+        onlineTag: formData.onlineTag,
+        bannerImage: formData.bannerImage || undefined,
+        bannerTitle: formData.bannerTitle || undefined,
+        bannerSubtitle: formData.bannerSubtitle || undefined,
+        teacherGroupImage: formData.teacherGroupImage || undefined,
+        yellowTagText: formData.yellowTagText || undefined,
+        languageBadge: formData.languageBadge || undefined,
+        audienceText: formData.audienceText || undefined,
+        promoBannerText: formData.promoBannerText || undefined,
+        oldPrice: formData.oldPrice ? Number(formData.oldPrice) : undefined,
+        discountPercent: formData.discountPercent ? Number(formData.discountPercent) : undefined,
       };
 
       if (editingCourse) {
@@ -275,12 +292,19 @@ const Admin = () => {
       syllabus: course.syllabus?.join(", ") || "",
       color: course.color || "from-mathsy-blue to-primary",
       popular: course.popular || false,
-      batchAbout: course.batchAbout || "",
-      startDate: course.courseDuration?.startDate ? new Date(course.courseDuration.startDate).toISOString().split('T')[0] : "",
-      endDate: course.courseDuration?.endDate ? new Date(course.courseDuration.endDate).toISOString().split('T')[0] : "",
-      validity: course.validity ? new Date(course.validity).toISOString().split('T')[0] : "",
       examGuidance: course.examGuidance || "Exam guidance at our Mathsy Offline centers",
       counselingSupport: course.counselingSupport || "One-to-one emotional well-being support by Mathsy counselors",
+      onlineTag: course.onlineTag ?? true,
+      bannerImage: course.bannerImage || "",
+      bannerTitle: course.bannerTitle || "",
+      bannerSubtitle: course.bannerSubtitle || "",
+      teacherGroupImage: course.teacherGroupImage || "",
+      yellowTagText: course.yellowTagText || "COMEBACK KIT INCLUDED",
+      languageBadge: course.languageBadge || "Hinglish",
+      audienceText: course.audienceText || "",
+      promoBannerText: course.promoBannerText || "New Batch Plans Included",
+      oldPrice: course.oldPrice?.toString() || "",
+      discountPercent: course.discountPercent?.toString() || "",
     });
     setIsDialogOpen(true);
   };
@@ -311,12 +335,19 @@ const Admin = () => {
       syllabus: "",
       color: "from-mathsy-blue to-primary",
       popular: false,
-      batchAbout: "",
-      startDate: "",
-      endDate: "",
-      validity: "",
       examGuidance: "Exam guidance at our Mathsy Offline centers",
       counselingSupport: "One-to-one emotional well-being support by Mathsy counselors",
+      onlineTag: true,
+      bannerImage: "",
+      bannerTitle: "",
+      bannerSubtitle: "",
+      teacherGroupImage: "",
+      yellowTagText: "COMEBACK KIT INCLUDED",
+      languageBadge: "Hinglish",
+      audienceText: "",
+      promoBannerText: "New Batch Plans Included",
+      oldPrice: "",
+      discountPercent: "",
     });
     setEditingCourse(null);
   };
@@ -695,47 +726,7 @@ const Admin = () => {
                   />
                 </div>
 
-                <div>
-                  <Label htmlFor="batchAbout">About the Batch</Label>
-                  <Textarea
-                    id="batchAbout"
-                    value={formData.batchAbout}
-                    onChange={(e) => setFormData({ ...formData, batchAbout: e.target.value })}
-                    placeholder="Describe the batch details..."
-                    rows={3}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="startDate">Course Start Date</Label>
-                    <Input
-                      id="startDate"
-                      type="date"
-                      value={formData.startDate}
-                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="endDate">Course End Date</Label>
-                    <Input
-                      id="endDate"
-                      type="date"
-                      value={formData.endDate}
-                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="validity">Course Validity</Label>
-                  <Input
-                    id="validity"
-                    type="date"
-                    value={formData.validity}
-                    onChange={(e) => setFormData({ ...formData, validity: e.target.value })}
-                  />
-                </div>
+                {/* Removed Batch About, Dates, and Validity */}
 
                 <div>
                   <Label htmlFor="examGuidance">Exam Guidance</Label>
@@ -776,6 +767,152 @@ const Admin = () => {
                     onCheckedChange={(checked) => setFormData({ ...formData, popular: checked })}
                   />
                   <Label htmlFor="popular">Mark as Popular</Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="onlineTag"
+                    checked={formData.onlineTag}
+                    onCheckedChange={(checked) => setFormData({ ...formData, onlineTag: checked })}
+                  />
+                  <Label htmlFor="onlineTag">Show ONLINE Ribbon</Label>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 border-t pt-4">
+                  <div className="col-span-2 font-semibold">Banner Settings</div>
+                  <div>
+                    <Label htmlFor="bannerImage">Banner Image URL</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="bannerImage"
+                        value={formData.bannerImage}
+                        onChange={(e) => setFormData({ ...formData, bannerImage: e.target.value })}
+                        placeholder="https://..."
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.accept = 'image/*';
+                          input.onchange = (e) => {
+                            const file = (e.target as HTMLInputElement).files?.[0];
+                            if (file) handleFileUpload(file, 'bannerImage', (url) => setFormData(prev => ({ ...prev, bannerImage: url })));
+                          };
+                          input.click();
+                        }}
+                        disabled={uploading['bannerImage']}
+                      >
+                        {uploading['bannerImage'] ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="teacherGroupImage">Teacher Group Image URL</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="teacherGroupImage"
+                        value={formData.teacherGroupImage}
+                        onChange={(e) => setFormData({ ...formData, teacherGroupImage: e.target.value })}
+                        placeholder="https://..."
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.accept = 'image/*';
+                          input.onchange = (e) => {
+                            const file = (e.target as HTMLInputElement).files?.[0];
+                            if (file) handleFileUpload(file, 'teacherGroupImage', (url) => setFormData(prev => ({ ...prev, teacherGroupImage: url })));
+                          };
+                          input.click();
+                        }}
+                        disabled={uploading['teacherGroupImage']}
+                      >
+                        {uploading['teacherGroupImage'] ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="bannerTitle">Banner Title (Uppercase)</Label>
+                    <Input
+                      id="bannerTitle"
+                      value={formData.bannerTitle}
+                      onChange={(e) => setFormData({ ...formData, bannerTitle: e.target.value })}
+                      placeholder="PROJECT 45"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="bannerSubtitle">Banner Subtitle</Label>
+                    <Input
+                      id="bannerSubtitle"
+                      value={formData.bannerSubtitle}
+                      onChange={(e) => setFormData({ ...formData, bannerSubtitle: e.target.value })}
+                      placeholder="CLASS 11TH"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="yellowTagText">Yellow Tag Text</Label>
+                    <Input
+                      id="yellowTagText"
+                      value={formData.yellowTagText}
+                      onChange={(e) => setFormData({ ...formData, yellowTagText: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="languageBadge">Language Badge</Label>
+                    <Input
+                      id="languageBadge"
+                      value={formData.languageBadge}
+                      onChange={(e) => setFormData({ ...formData, languageBadge: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 border-t pt-4">
+                  <div className="col-span-2 font-semibold">Additional Details</div>
+                  <div>
+                    <Label htmlFor="audienceText">Audience Text</Label>
+                    <Input
+                      id="audienceText"
+                      value={formData.audienceText}
+                      onChange={(e) => setFormData({ ...formData, audienceText: e.target.value })}
+                      placeholder="For Class 11th Science Students"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="promoBannerText">Promo Banner Text</Label>
+                    <Input
+                      id="promoBannerText"
+                      value={formData.promoBannerText}
+                      onChange={(e) => setFormData({ ...formData, promoBannerText: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="oldPrice">Old Price (₹)</Label>
+                    <Input
+                      id="oldPrice"
+                      type="number"
+                      value={formData.oldPrice}
+                      onChange={(e) => setFormData({ ...formData, oldPrice: e.target.value })}
+                      placeholder="2450"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="discountPercent">Discount Percent (%)</Label>
+                    <Input
+                      id="discountPercent"
+                      type="number"
+                      value={formData.discountPercent}
+                      onChange={(e) => setFormData({ ...formData, discountPercent: e.target.value })}
+                      placeholder="59"
+                    />
+                  </div>
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4">

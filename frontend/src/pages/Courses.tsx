@@ -1,4 +1,5 @@
 import { Layout } from "@/components/layout/Layout";
+import { CourseCard } from "@/components/courses/CourseCard";
 import { Button } from "@/components/ui/button";
 import { Clock, Users, BookOpen, CheckCircle, Calendar, Loader2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -52,14 +53,23 @@ interface Course {
   syllabus?: string[];
   color?: string;
   popular?: boolean;
-  batchAbout?: string;
+  examGuidance?: string;
+  counselingSupport?: string;
+  onlineTag?: boolean;
+  bannerImage?: string;
+  bannerTitle?: string;
+  bannerSubtitle?: string;
+  teacherGroupImage?: string;
+  yellowTagText?: string;
   courseDuration?: {
     startDate?: string;
     endDate?: string;
   };
-  validity?: string;
-  examGuidance?: string;
-  counselingSupport?: string;
+  languageBadge?: string;
+  audienceText?: string;
+  promoBannerText?: string;
+  oldPrice?: number;
+  discountPercent?: number;
 }
 
 const Courses = () => {
@@ -218,7 +228,7 @@ const Courses = () => {
             });
             const verifyJson = await verifyRes.json();
             console.log('[Payment] Verification response:', verifyJson);
-            
+
             if (verifyRes.ok && verifyJson.status === 'success') {
               console.log('[Payment] Payment verified successfully');
               // Create enrollment with active status
@@ -243,7 +253,7 @@ const Courses = () => {
           }
         },
         modal: {
-          ondismiss: function() {
+          ondismiss: function () {
             console.log('[Payment] Payment modal dismissed by user');
             console.log('[Payment] User closed the payment window without completing payment');
             toast.error('Payment cancelled. Please try again when ready.');
@@ -258,7 +268,7 @@ const Courses = () => {
       console.log('[Payment] Opening Razorpay checkout...');
       // @ts-ignore
       const rzp = new window.Razorpay(options);
-      
+
       // Add error handler for payment failures
       rzp.on('payment.failed', function (response: any) {
         console.error('[Payment] Payment failed');
@@ -270,11 +280,11 @@ const Courses = () => {
         console.error('[Payment] Full error object:', response.error);
         console.error('[Payment] Order ID:', response.error.metadata?.order_id);
         console.error('[Payment] Payment ID:', response.error.metadata?.payment_id);
-        
+
         // Show user-friendly error message
         const errorMessage = response.error.description || 'Payment failed. Please try again.';
         toast.error(`Payment failed: ${errorMessage}`);
-        
+
         // If it's a card issue, provide helpful guidance
         if (response.error.description && response.error.description.includes('International')) {
           console.warn('[Payment] Tip: Use Indian test cards for test mode');
@@ -282,7 +292,7 @@ const Courses = () => {
           toast.error('For test mode, please use Indian test cards. Card: 4111 1111 1111 1111, CVV: any 3 digits, Expiry: any future date');
         }
       });
-      
+
       rzp.open();
       setIsDialogOpen(false);
       console.log('[Payment] Razorpay checkout opened successfully');
@@ -296,7 +306,7 @@ const Courses = () => {
   return (
     <Layout>
       {/* Hero */}
-      <section className="py-20 bg-hero-gradient overflow-hidden">
+      <section className="py-10 bg-hero-gradient overflow-hidden">
         <div className="container mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -308,7 +318,7 @@ const Courses = () => {
               Our <span className="text-secondary">Courses</span>
             </h1>
             <p className="text-primary-foreground/80 text-lg">
-              Structured curriculum designed for Class 8-12 students. Choose the course that fits your academic goals.
+              Structured curriculum designed for Class 01-12 students. Choose the course that fits your academic goals.
             </p>
           </motion.div>
         </div>
@@ -357,36 +367,6 @@ const Courses = () => {
           </DialogHeader>
           {selectedCourse && (
             <div className="space-y-6 py-4">
-              {/* About the Batch */}
-              {selectedCourse.batchAbout && (
-                <div>
-                  <h4 className="font-semibold text-lg mb-2">About the Batch</h4>
-                  <p className="text-sm text-muted-foreground whitespace-pre-line">{selectedCourse.batchAbout}</p>
-                </div>
-              )}
-
-              {/* Course Duration */}
-              {selectedCourse.courseDuration && (selectedCourse.courseDuration.startDate || selectedCourse.courseDuration.endDate) && (
-                <div>
-                  <h4 className="font-semibold mb-2">Course Duration</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedCourse.courseDuration.startDate && new Date(selectedCourse.courseDuration.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
-                    {selectedCourse.courseDuration.startDate && selectedCourse.courseDuration.endDate && ' - '}
-                    {selectedCourse.courseDuration.endDate && new Date(selectedCourse.courseDuration.endDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
-                  </p>
-                </div>
-              )}
-
-              {/* Validity */}
-              {selectedCourse.validity && (
-                <div>
-                  <h4 className="font-semibold mb-2">Validity</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {new Date(selectedCourse.validity).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
-                  </p>
-                </div>
-              )}
-
               {/* Exam Guidance */}
               {selectedCourse.examGuidance && (
                 <div>
@@ -433,7 +413,7 @@ const Courses = () => {
       </Dialog>
 
       {/* Courses Grid */}
-      <section className="py-20 bg-background">
+      <section className="py-20 bg-[#F9FAFB]">
         <div className="container mx-auto px-4">
           {isLoading ? (
             <div className="flex items-center justify-center py-20">
@@ -448,85 +428,30 @@ const Courses = () => {
               variants={containerVariants}
               initial="hidden"
               animate="visible"
-              className="space-y-8"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1 justify-items-center"
             >
               {courses.map((course) => (
-                <motion.div
+                <CourseCard
                   key={course._id}
-                  variants={itemVariants}
-                  whileHover={{ y: -5, transition: { duration: 0.2 } }}
-                  className="bg-card rounded-2xl shadow-card hover:shadow-card-hover transition-all overflow-hidden"
-                >
-                  <div className="grid lg:grid-cols-3">
-                    {/* Header */}
-                    <div className={`bg-gradient-to-br ${course.color || 'from-mathsy-blue to-primary'} p-8 text-primary-foreground relative`}>
-                      {course.popular && (
-                        <motion.span
-                          initial={{ x: 20, opacity: 0 }}
-                          animate={{ x: 0, opacity: 1 }}
-                          transition={{ delay: 0.5 }}
-                          className="absolute top-4 right-4 bg-secondary text-secondary-foreground text-xs font-bold px-3 py-1 rounded-full"
-                        >
-                          Most Popular
-                        </motion.span>
-                      )}
-                      <h2 className="font-display text-2xl font-bold mb-4">{course.title}</h2>
-                      <p className="text-primary-foreground/80 mb-6">{course.description}</p>
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                          <Clock className="w-5 h-5" />
-                          <span>{course.duration}</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <Calendar className="w-5 h-5" />
-                          <span>{course.timing}</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <Users className="w-5 h-5" />
-                          <span>{course.studentsCount || 0}+ enrolled</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <BookOpen className="w-5 h-5" />
-                          <span>{course.chapters} chapters</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Syllabus */}
-                    <div className="p-8 lg:col-span-2">
-                      <h3 className="font-display font-bold text-lg text-foreground mb-4">Course Syllabus Highlights</h3>
-                      {course.syllabus && course.syllabus.length > 0 ? (
-                        <div className="grid sm:grid-cols-2 gap-3 mb-8">
-                          {course.syllabus.map((topic, i) => (
-                            <div key={i} className="flex items-center gap-2 text-foreground/80">
-                              <CheckCircle className="w-5 h-5 text-accent shrink-0" />
-                              <span>{topic}</span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-muted-foreground mb-8">Syllabus details coming soon...</p>
-                      )}
-
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-6 border-t border-border">
-                        <div>
-                          <span className="text-muted-foreground">Course Fee</span>
-                          <div className="font-display text-3xl font-bold text-primary">₹{course.price.toLocaleString()}</div>
-                          <span className="text-sm text-muted-foreground">per year • EMI available</span>
-                        </div>
-                        <div className="flex gap-3">
-                          <Button variant="outline" onClick={() => { setSelectedCourse(course); setIsDetailsOpen(true); }}>View Details</Button>
-                          <Button
-                            variant="hero"
-                            onClick={() => handleEnrollClick(course)}
-                          >
-                            {enrolledCourseIds.has(course._id) ? 'Show Course' : 'Enroll Now'}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
+                  title={course.title}
+                  subtitle={course.description.substring(0, 100) + '...'}
+                  bannerImage={course.bannerImage}
+                  bannerTitle={course.bannerTitle}
+                  bannerSubtitle={course.bannerSubtitle}
+                  teacherGroupImage={course.teacherGroupImage}
+                  yellowTagText={course.yellowTagText}
+                  startDate={course.courseDuration?.startDate}
+                  endDate={course.courseDuration?.endDate}
+                  price={course.price}
+                  oldPrice={course.oldPrice}
+                  language={course.languageBadge}
+                  promoText={course.promoBannerText}
+                  discount={course.discountPercent}
+                  onlineTag={course.onlineTag}
+                  audienceText={course.audienceText}
+                  onExplore={() => { setSelectedCourse(course); setIsDetailsOpen(true); }}
+                  onBuy={() => handleEnrollClick(course)}
+                />
               ))}
             </motion.div>
           )}

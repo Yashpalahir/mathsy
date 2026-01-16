@@ -208,6 +208,19 @@ class ApiClient {
     syllabus?: string[];
     color?: string;
     popular?: boolean;
+    onlineTag?: boolean;
+    bannerImage?: string;
+    bannerTitle?: string;
+    bannerSubtitle?: string;
+    teacherGroupImage?: string;
+    yellowTagText?: string;
+    languageBadge?: string;
+    audienceText?: string;
+    promoBannerText?: string;
+    oldPrice?: number;
+    discountPercent?: number;
+    examGuidance?: string;
+    counselingSupport?: string;
   }) {
     return this.request<any>('/courses', {
       method: 'POST',

@@ -49,29 +49,6 @@ const courseSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    studentsCount: {
-      type: Number,
-      default: 0,
-    },
-    videoUrl: {
-      type: String,
-      trim: true,
-    },
-    batchAbout: {
-      type: String,
-      trim: true,
-    },
-    courseDuration: {
-      startDate: {
-        type: Date,
-      },
-      endDate: {
-        type: Date,
-      },
-    },
-    validity: {
-      type: Date,
-    },
     examGuidance: {
       type: String,
       trim: true,
@@ -85,6 +62,54 @@ const courseSchema = new mongoose.Schema(
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
+    },
+    onlineTag: {
+      type: Boolean,
+      default: true,
+    },
+    bannerImage: {
+      type: String,
+      trim: true,
+    },
+    bannerTitle: {
+      type: String,
+      trim: true,
+    },
+    bannerSubtitle: {
+      type: String,
+      trim: true,
+    },
+    teacherGroupImage: {
+      type: String,
+      trim: true,
+    },
+    yellowTagText: {
+      type: String,
+      trim: true,
+      default: 'COMEBACK KIT INCLUDED',
+    },
+    languageBadge: {
+      type: String,
+      trim: true,
+      default: 'Hinglish',
+    },
+    audienceText: {
+      type: String,
+      trim: true,
+    },
+    promoBannerText: {
+      type: String,
+      trim: true,
+      default: 'New Batch Plans Included',
+    },
+    oldPrice: {
+      type: Number,
+      min: [0, 'Old price cannot be negative'],
+    },
+    discountPercent: {
+      type: Number,
+      min: [0, 'Discount cannot be negative'],
+      max: [100, 'Discount cannot be more than 100%'],
     },
   },
   {
